@@ -39,36 +39,6 @@
             min-height: 100vh;
             overflow-x: hidden;
             font-size: 20px; 
-            /* touch-action handled dynamically */
-        }
-
-        /* حاويات الأقسام التي سيتم الرسم عليها */
-        section, header, .drawing-zone {
-            position: relative !important; /* ضروري لتموضع الكانفس داخله */
-        }
-
-        /* --- Drawing Tool CSS Updated --- */
-        .section-drawing-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            /* تعديل: رفع الطبقة لتكون فوق حقول الإدخال (60) */
-            z-index: 80; 
-            pointer-events: none; /* افتراضيا لا يتفاعل لتتمكن من الكتابة */
-            touch-action: none; 
-        }
-        
-        body.drawing-mode-active .section-drawing-canvas {
-            pointer-events: auto; /* تفعيل التفاعل عند وضع الرسم */
-            cursor: crosshair;
-            background-color: rgba(255, 255, 255, 0.01); 
-        }
-
-        /* تحسين التموضع لضمان عدم تغطية الأزرار الهامة عند عدم الرسم */
-        body:not(.drawing-mode-active) .section-drawing-canvas {
-            display: block; 
         }
 
         /* ========================================= */
@@ -140,9 +110,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             line-height: 1;
-            /* أعلى من الرسم ليمكن ضغطه حتى والرسم مفعل جزئياً إذا دعت الحاجة، لكن عند الرسم الكامل الكانفس يغطيه */
-            z-index: 90; 
-            position: relative;
         }
         .help-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
         .help-btn:active { transform: translateY(0) scale(0.98); }
@@ -340,15 +307,15 @@
         }
 
         /* --- Standard Styles --- */
-        .option-card { cursor: pointer; border: 5px solid #cbd5e1; border-radius: 1.2rem; padding: 2rem 1rem; font-size: 1.7rem; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background-color: white; min-height: 140px; font-weight: 900; color: #1e293b; position: relative; z-index: 60; }
+        .option-card { cursor: pointer; border: 5px solid #cbd5e1; border-radius: 1.2rem; padding: 2rem 1rem; font-size: 1.7rem; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background-color: white; min-height: 140px; font-weight: 900; color: #1e293b; position: relative; }
         .option-card:hover { border-color: #64748b; transform: translateY(-5px); box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.15); }
         .option-card.active-purple { background-color: #f3e8ff; border-color: #7e22ce; color: #581c87; box-shadow: 0 0 0 6px #d8b4fe; transform: scale(1.02); z-index: 10; }
         .option-card.active-indigo { background-color: #e0e7ff; border-color: #4f46e5; color: #312e81; box-shadow: 0 0 0 5px #a5b4fc; transform: scale(1.02); z-index: 10; }
         .option-card.active-emerald { background-color: #d1fae5; border-color: #059669; color: #064e3b; box-shadow: 0 0 0 5px #6ee7b7; transform: scale(1.02); z-index: 10; }
         .option-card.active-gray { background-color: #f3f4f6; border-color: #4b5563; color: #111827; box-shadow: 0 0 0 5px #9ca3af; transform: scale(1.02); z-index: 10; }
         .checkbox-wrapper-active { background-color: #d1fae5 !important; border-color: #059669 !important; color: #064e3b !important; box-shadow: 0 0 0 4px #6ee7b7 !important; }
-        .upload-container-wrapper { width: 100%; max-width: 100%; margin: 0 auto; position: relative; z-index: 60; }
-        .upload-box { width: 100%; aspect-ratio: 1 / 1; border: 5px dashed #94a3b8; border-radius: 1.5rem; position: relative; background-color: #f8fafc; transition: all 0.3s; overflow: hidden; display: flex; align-items: center; justify-content: center; z-index: 60; }
+        .upload-container-wrapper { width: 100%; max-width: 100%; margin: 0 auto; }
+        .upload-box { width: 100%; aspect-ratio: 1 / 1; border: 5px dashed #94a3b8; border-radius: 1.5rem; position: relative; background-color: #f8fafc; transition: all 0.3s; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .upload-box:hover { border-color: #3b82f6; background-color: #eff6ff; }
         .upload-box.has-image { border-style: solid; border-color: #cbd5e1; background-color: #fff; border-width: 5px; }
         .upload-placeholder { text-align: center; color: #64748b; pointer-events: none; padding: 1rem; }
@@ -369,8 +336,6 @@
             font-size: 1.5rem !important; /* حجم خط موحد وصغير (28-30px تقريباً) لجميع الحقول */
             font-weight: 700 !important;
             border-radius: 1.5rem !important;
-            position: relative; 
-            z-index: 60; /* تحت طبقة الرسم */
         }
         .custom-input:focus, input[type="text"]:focus, textarea:focus { 
             transform: translateY(-3px); 
@@ -612,25 +577,37 @@
         }
 
         /* --- Drawing Tool CSS --- */
+        .drawing-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            pointer-events: none; /* Initially pass-through to allow form interaction */
+        }
+        .drawing-canvas.active {
+            pointer-events: auto; /* Capture events when drawing mode is on */
+            cursor: crosshair;
+            background-color: rgba(255, 255, 255, 0.05); /* Slight tint to indicate mode */
+        }
         
-        /* Floating Button Container - Bottom Right */
+        /* Floating Button Container - Center Bottom */
         #drawing-fab-container {
             position: fixed;
             bottom: 30px;
-            right: 30px; /* Right side */
-            left: auto;  /* Override center */
-            transform: none; /* Override translate */
+            right: 30px; /* Aligned to right for better thumb access */
             z-index: 10000;
             display: flex;
-            flex-direction: row; /* Horizontal */
+            flex-direction: row-reverse; /* Toggle on right, toolbar extends left */
             align-items: center;
-            gap: 15px;
-            direction: ltr; /* Ensure tools are LTR */
+            gap: 20px;
+            width: max-content;
         }
         
         #btn-toggle-drawing {
-            width: 70px; /* Slightly smaller for strip balance */
-            height: 70px;
+            width: 110px; 
+            height: 110px;
             border-radius: 50%;
             background: linear-gradient(135deg, #f97316, #ea580c);
             color: white;
@@ -638,111 +615,82 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
-            border: 4px solid white;
+            font-size: 3.5rem;
+            border: 6px solid white;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            order: 2; /* Toggle on the right */
-            flex-shrink: 0;
         }
-        #btn-toggle-drawing:hover { transform: scale(1.1); box-shadow: 0 15px 35px rgba(234, 88, 12, 0.5); }
-        #btn-toggle-drawing.active { background: #ef4444; transform: rotate(0deg); }
-        #btn-toggle-icon.active-icon { transform: rotate(45deg); } /* Handle icon rotation specifically if needed */
+        #btn-toggle-drawing:hover { transform: scale(1.1) rotate(10deg); box-shadow: 0 15px 35px rgba(234, 88, 12, 0.5); }
+        #btn-toggle-drawing.active { background: #ef4444; transform: rotate(45deg); }
 
-        /* Toolbar Styling - Horizontal Strip */
+        /* Toolbar Styling - STRIP VERSION (Horizontal Pill) */
         #drawing-toolbar {
             background-color: white;
-            border-radius: 100px; /* Full pill shape */
-            padding: 10px 30px;
+            border-radius: 60px; /* Pill shape */
+            padding: 15px 30px;
             display: flex;
-            flex-direction: row;
+            flex-direction: row; /* Horizontal strip */
             align-items: center;
-            gap: 20px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-            border: 4px solid #fed7aa;
-            transform-origin: center right;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            gap: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+            border: 5px solid #fed7aa;
             margin-bottom: 0;
-            min-width: auto;
             width: max-content;
-            order: 1; /* Toolbar on the left */
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: auto;
         }
         #drawing-toolbar.hidden { display: none; }
 
-        .dt-section-title { display: none; } /* Hide titles */
+        .dt-section-title { display: none; } /* Hidden for strip mode */
+        .dt-row { display: flex; gap: 10px; margin: 0; align-items: center; }
         
-        .dt-row { 
-            display: flex; 
-            gap: 8px; 
-            margin-bottom: 0 !important; /* Override inline styles if any */
-            align-items: center;
+        .dt-divider {
+            width: 3px;
+            height: 50px;
+            background-color: #e2e8f0;
+            margin: 0 10px;
+            border-radius: 2px;
         }
         
-        /* Groups inside toolbar */
-        #drawing-toolbar > div {
-            display: flex;
-            align-items: center;
-            border-right: 2px solid #e2e8f0;
-            padding-right: 15px;
-        }
-        #drawing-toolbar > div:last-child, 
-        #drawing-toolbar > div:nth-last-child(2) { /* Adjust for the buttons at end */
-            border-right: none;
-            padding-right: 0;
-        }
-
-        /* Tools Buttons */
+        /* Bigger Buttons for Mobile Strip */
         .dt-btn {
-            width: 45px; height: 45px; /* Smaller buttons for strip */
-            border-radius: 12px;
+            width: 80px; height: 80px;
+            border-radius: 20px;
             background-color: #f1f5f9;
             color: #64748b;
-            border: 2px solid #e2e8f0;
+            border: 3px solid #e2e8f0;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem;
+            font-size: 2.2rem;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .dt-btn:hover { background-color: #e0f2fe; color: #0284c7; transform: translateY(-2px); }
-        .dt-btn.active { background-color: #0ea5e9; color: white; border-color: #0284c7; box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3); }
+        .dt-btn:hover { background-color: #e0f2fe; color: #0284c7; transform: translateY(-3px); }
+        .dt-btn.active { background-color: #0ea5e9; color: white; border-color: #0284c7; box-shadow: 0 5px 15px rgba(14, 165, 233, 0.4); }
         
-        /* Color Swatches */
+        /* Bigger Color Swatches */
         .dt-color {
-            width: 35px; height: 35px; /* Smaller swatches */
+            width: 70px; height: 70px;
             border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 0 0 2px #e2e8f0;
+            border: 4px solid white;
+            box-shadow: 0 0 0 3px #e2e8f0;
             cursor: pointer;
             transition: all 0.2s;
         }
         .dt-color:hover { transform: scale(1.15); }
-        .dt-color.active { box-shadow: 0 0 0 3px #0f172a; transform: scale(1.1); z-index: 2; }
+        .dt-color.active { box-shadow: 0 0 0 5px #0f172a; transform: scale(1.15); z-index: 2; }
         
         /* Size Slider */
-        .dt-slider { -webkit-appearance: none; width: 80px; height: 8px; background: #e2e8f0; border-radius: 10px; outline: none; margin: 0 10px; }
-        .dt-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #0ea5e9; border-radius: 50%; cursor: pointer; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .dt-slider { -webkit-appearance: none; width: 180px; height: 15px; background: #e2e8f0; border-radius: 10px; outline: none; margin: 0; }
+        .dt-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 40px; height: 40px; background: #0ea5e9; border-radius: 50%; cursor: pointer; border: 5px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
 
         /* Action Buttons */
-        .dt-action { 
-            padding: 0 15px; 
-            height: 45px;
-            border-radius: 12px; 
-            font-weight: 800; 
-            font-size: 1rem; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 5px; 
-            border: none; 
-            cursor: pointer; 
-            transition: 0.2s; 
-        }
+        .dt-action { padding: 0 25px; height: 80px; border-radius: 20px; font-weight: 800; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; transition: 0.2s; }
         .dt-undo-redo { background: #f1f5f9; color: #475569; }
         .dt-undo-redo:hover { background: #cbd5e1; }
-        .dt-clear { background: #fee2e2; color: #ef4444; width: auto !important; }
+        .dt-clear { background: #fee2e2; color: #ef4444; }
         .dt-clear:hover { background: #ef4444; color: white; }
 
-        @keyframes popIn { from { opacity: 0; transform: scaleX(0.5); } to { opacity: 1; transform: scaleX(1); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
     </style>
@@ -754,40 +702,43 @@
         <h3 id="loading-text">جاري المعالجة...</h3>
     </div>
 
-    <!-- Drawing Floating UI -->
+    <!-- Drawing Canvas -->
+    <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
+
+    <!-- Drawing Floating UI (Horizontal Strip Mode) -->
     <div id="drawing-fab-container" class="no-print">
         
         <!-- Toolbar Strip -->
         <div id="drawing-toolbar" class="hidden">
-            <!-- Tools Group -->
-            <div>
-                <div class="dt-row">
-                    <button class="dt-btn active" onclick="window.setDrawTool('pencil')" title="قلم حر"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="dt-btn" onclick="window.setDrawTool('line')" title="خط مستقيم"><i class="fas fa-slash" style="transform: rotate(-45deg);"></i></button>
-                    <button class="dt-btn" onclick="window.setDrawTool('arrow')" title="سهم"><i class="fas fa-long-arrow-alt-right" style="transform: rotate(-45deg);"></i></button>
-                    <button class="dt-btn" onclick="window.setDrawTool('rect')" title="مربع/مستطيل"><i class="far fa-square"></i></button>
-                    <button class="dt-btn" onclick="window.setDrawTool('circle')" title="دائرة"><i class="far fa-circle"></i></button>
-                    <button class="dt-btn" onclick="window.setDrawTool('eraser')" title="ممحاة"><i class="fas fa-eraser"></i></button>
-                </div>
+            <!-- Tools -->
+            <div class="dt-row">
+                <button class="dt-btn active" onclick="window.setDrawTool('pencil')" title="قلم حر"><i class="fas fa-pencil-alt"></i></button>
+                <button class="dt-btn" onclick="window.setDrawTool('line')" title="خط مستقيم"><i class="fas fa-slash" style="transform: rotate(-45deg);"></i></button>
+                <button class="dt-btn" onclick="window.setDrawTool('arrow')" title="سهم"><i class="fas fa-long-arrow-alt-right" style="transform: rotate(-45deg);"></i></button>
+                <button class="dt-btn" onclick="window.setDrawTool('rect')" title="مربع/مستطيل"><i class="far fa-square"></i></button>
+                <button class="dt-btn" onclick="window.setDrawTool('circle')" title="دائرة"><i class="far fa-circle"></i></button>
+                <button class="dt-btn" onclick="window.setDrawTool('eraser')" title="ممحاة"><i class="fas fa-eraser"></i></button>
             </div>
 
-            <!-- Colors Group -->
-            <div>
-                <div class="dt-row">
-                    <div class="dt-color active" style="background: #ef4444;" onclick="window.setDrawColor('#ef4444', this)"></div>
-                    <div class="dt-color" style="background: #3b82f6;" onclick="window.setDrawColor('#3b82f6', this)"></div>
-                    <div class="dt-color" style="background: #22c55e;" onclick="window.setDrawColor('#22c55e', this)"></div>
-                    <div class="dt-color" style="background: #eab308;" onclick="window.setDrawColor('#eab308', this)"></div>
-                    <div class="dt-color" style="background: #000000;" onclick="window.setDrawColor('#000000', this)"></div>
-                </div>
+            <div class="dt-divider"></div>
+
+            <!-- Colors -->
+            <div class="dt-row">
+                <div class="dt-color active" style="background: #ef4444;" onclick="window.setDrawColor('#ef4444', this)"></div> <!-- Red -->
+                <div class="dt-color" style="background: #3b82f6;" onclick="window.setDrawColor('#3b82f6', this)"></div> <!-- Blue -->
+                <div class="dt-color" style="background: #22c55e;" onclick="window.setDrawColor('#22c55e', this)"></div> <!-- Green -->
+                <div class="dt-color" style="background: #eab308;" onclick="window.setDrawColor('#eab308', this)"></div> <!-- Yellow -->
+                <div class="dt-color" style="background: #000000;" onclick="window.setDrawColor('#000000', this)"></div> <!-- Black -->
             </div>
 
-            <!-- Size Group -->
-            <div>
-                <input type="range" min="2" max="20" value="5" class="dt-slider" oninput="window.setDrawSize(this.value)" title="حجم الخط">
-            </div>
+            <div class="dt-divider"></div>
 
-            <!-- Actions Group -->
+            <!-- Size -->
+            <input type="range" min="2" max="20" value="5" class="dt-slider" oninput="window.setDrawSize(this.value)">
+
+            <div class="dt-divider"></div>
+
+            <!-- Actions -->
             <div class="dt-row">
                 <button class="dt-action dt-undo-redo" onclick="window.drawUndo()"><i class="fas fa-undo"></i></button>
                 <button class="dt-action dt-clear" onclick="window.drawClear()"><i class="fas fa-trash-alt"></i></button>
@@ -859,7 +810,7 @@
     </div>
 
     <!-- Header -->
-    <header class="drawing-zone relative bg-white shadow-lg sticky top-0 z-40 no-print border-b-8 border-gray-200 mb-10 w-full">
+    <header class="bg-white shadow-lg sticky top-0 z-40 no-print border-b-8 border-gray-200 mb-10 w-full">
         <div class="w-full px-10 py-6 flex flex-row justify-between items-center gap-8">
             <h1 class="text-4xl font-black text-gray-900">استمارة زي التخرج الذكية</h1>
             
@@ -877,7 +828,7 @@
         <form id="gradForm" onsubmit="return false;">
 
             <!-- Info Section -->
-            <section class="drawing-zone relative bg-white p-10 rounded-[2.5rem] shadow-lg border-8 border-gray-100 overflow-hidden">
+            <section class="bg-white p-10 rounded-[2.5rem] shadow-lg border-8 border-gray-100 relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-4 h-full bg-blue-600"></div>
                 <!-- تعديل هذا القسم لإضافة الصورة -->
                 <div class="flex items-center justify-between mb-10">
@@ -908,7 +859,7 @@
                     <i class="fas fa-ribbon text-purple-600 bg-purple-100 p-5 rounded-3xl"></i> أولاً: الوشاح
                 </h2>
 
-                <div class="drawing-zone relative subsection-container border-purple-200">
+                <div class="subsection-container border-purple-200">
                     <div class="border-b-4 border-purple-100 pb-2 mb-6 flex justify-between items-end">
                         <h3 class="text-3xl font-black text-purple-900 flex items-center gap-4">
                             <span class="bg-purple-200 text-purple-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">1</span>
@@ -941,7 +892,7 @@
                     </p>
                 </div>
 
-                <div id="sashContentWrapper" class="drawing-zone relative hidden space-y-8">
+                <div id="sashContentWrapper" class="hidden space-y-8">
                     <div id="sashEndsContainer" class="subsection-container border-purple-200">
                         <div class="border-b-4 border-purple-100 pb-2 mb-6 flex justify-between items-end">
                             <h3 class="text-3xl font-black text-purple-900 flex items-center gap-4">
@@ -1088,7 +1039,7 @@
                             </h3>
                         </div>
                         
-                        <div id="sashSectionAmericanNotes" class="drawing-zone relative hidden mb-8 border-b-4 border-purple-100 pb-8">
+                        <div id="sashSectionAmericanNotes" class="hidden mb-8 border-b-4 border-purple-100 pb-8">
                              <div class="flex justify-between items-center mb-6">
                                 <h4 class="inner-subtitle text-purple-900 border-purple-600 mb-0">ملاحظات حول الوشاح الامريكي (إجباري)</h4>
                                 <button type="button" onclick="window.openPreloadedInstruction('sash-american-notes-group', 'ملاحظات الوشاح الامريكي')" class="help-btn btn-purple">
@@ -1143,7 +1094,7 @@
                 <h2 class="text-5xl font-black mb-10 text-gray-900 flex items-center gap-6">
                     <i class="fas fa-graduation-cap text-indigo-600 bg-indigo-100 p-5 rounded-3xl"></i> ثانياً: القبعة
                 </h2>
-                <div class="drawing-zone relative subsection-container border-indigo-200">
+                <div class="subsection-container border-indigo-200">
                     <div class="border-b-4 border-indigo-100 pb-2 mb-6 flex justify-between items-end">
                         <h3 class="text-3xl font-black text-indigo-900 flex items-center gap-4">
                             <span class="bg-indigo-200 text-indigo-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">1</span>
@@ -1168,7 +1119,7 @@
                         <span>مطلوب (يرجى اختيار نوع القبعة).</span>
                     </p>
                 </div>
-                <div id="capContentWrapper" class="drawing-zone relative hidden space-y-8">
+                <div id="capContentWrapper" class="hidden space-y-8">
                     <div class="subsection-container border-indigo-200 bg-indigo-50/50">
                         <div class="border-b-4 border-indigo-100 pb-2 mb-6 flex justify-between items-end">
                             <h3 class="text-3xl font-black text-indigo-900 flex items-center gap-4">
@@ -1296,7 +1247,7 @@
                 <h2 class="text-5xl font-black mb-10 text-gray-900 flex items-center gap-6">
                     <i class="fas fa-tshirt text-emerald-600 bg-emerald-100 p-5 rounded-3xl"></i> ثالثاً: الروب
                 </h2>
-                <div class="drawing-zone relative subsection-container border-emerald-200">
+                <div class="subsection-container border-emerald-200">
                     <div class="border-b-4 border-emerald-100 pb-2 mb-6 flex justify-between items-end">
                         <h3 class="text-3xl font-black text-emerald-900 flex items-center gap-4">
                             <span class="bg-emerald-200 text-emerald-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">1</span>
@@ -1322,7 +1273,7 @@
                     </p>
 
                     <!-- خيارات الروب الأمريكي -->
-                    <div id="americanGownOptions" class="drawing-zone relative hidden mt-8 pt-6 border-t-4 border-emerald-100">
+                    <div id="americanGownOptions" class="hidden mt-8 pt-6 border-t-4 border-emerald-100">
                         <h4 class="text-2xl font-black text-emerald-800 mb-6 text-center">خيارات الروب الأمريكي (اختَر كسرة واحدة على الأقل)</h4>
                         <div class="flex flex-row flex-wrap justify-center gap-6 px-4" id="americanPleatsOptions">
                             <label class="flex items-center gap-4 cursor-pointer p-5 rounded-2xl transition border-4 border-emerald-200 bg-emerald-50/30 hover:bg-emerald-100 checkbox-label" id="label-pleats-shoulder">
@@ -1347,7 +1298,7 @@
                     </div>
                 </div>
 
-                <div id="gownContentWrapper" class="drawing-zone relative hidden space-y-8">
+                <div id="gownContentWrapper" class="hidden space-y-8">
                     <!-- قسم إضافات الروب -->
                     <div class="subsection-container border-emerald-200">
                         <div class="border-b-4 border-emerald-100 pb-2 mb-6 flex justify-between items-end">
@@ -1672,17 +1623,16 @@
 
         // --- Drawing Tool Variables ---
         let isDrawMode = false;
+        let drawCanvas, drawCtx;
         let isDrawing = false;
         let drawStartX, drawStartY;
         let drawSnapshot;
+        let drawHistory = [];
+        let drawHistoryIndex = -1;
         
-        // Use a history object where key is canvas ID
-        let canvasHistories = {};
-        
-        let currentDrawTool = 'pencil'; 
+        let currentDrawTool = 'pencil'; // pencil, line, rect, circle, arrow, eraser
         let currentDrawColor = '#ef4444';
         let currentDrawSize = 5;
-        let activeCanvas = null; // The canvas currently being drawn on
 
         // --- دالة الفتح السريع ---
         window.openPreloadedInstruction = function(groupKey, mainTitle) {
@@ -1740,7 +1690,8 @@
         }
 
         // --- تهيئة التعليمات ---
-        function initAllInstructions() {
+        // تم نقل التعريف إلى هنا لضمان وجوده قبل الاستدعاء
+        window.initAllInstructions = function() {
             const contentArea = document.getElementById('instruction-content-area');
             if(!contentArea) return;
             
@@ -1814,12 +1765,13 @@
                 }
                 contentArea.appendChild(groupContainer);
             });
-        }
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
             initUploadBoxes();
             updateProgress();
-            initAllInstructions();
+            // تأكد من استدعاء الدالة بعد تعريفها
+            if (window.initAllInstructions) window.initAllInstructions();
             setTimeout(preloadImagesSmartly, 1000);
             
             document.querySelectorAll('.custom-input, textarea').forEach(el => {
@@ -1830,302 +1782,102 @@
                 });
             });
 
-            // Init Drawing Tool - New Multi-Canvas Strategy
-            initSectionCanvases();
+            // Init Drawing Canvas
+            initDrawingCanvas();
         });
 
-        // --- New Multi-Section Drawing Logic ---
-        function initSectionCanvases() {
-            // Updated: Initialize canvas on specific drawing zones instead of just sections
-            const zones = document.querySelectorAll('.drawing-zone');
+        // --- Drawing Tool Logic ---
+        function initDrawingCanvas() {
+            drawCanvas = document.getElementById('drawing-canvas');
+            if(!drawCanvas) return;
+            drawCtx = drawCanvas.getContext('2d');
             
-            zones.forEach((zone, index) => {
-                // Ensure zone is relative so canvas is absolute to it
-                if (getComputedStyle(zone).position === 'static') {
-                    zone.style.position = 'relative';
-                }
+            // Resize canvas to full document size
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Mouse/Touch Events
+            drawCanvas.addEventListener('mousedown', startDrawing);
+            drawCanvas.addEventListener('mousemove', draw);
+            drawCanvas.addEventListener('mouseup', stopDrawing);
+            drawCanvas.addEventListener('mouseout', stopDrawing);
+            
+            drawCanvas.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent("mousedown", {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                drawCanvas.dispatchEvent(mouseEvent);
+            }, false);
+            
+            drawCanvas.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent("mousemove", {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                drawCanvas.dispatchEvent(mouseEvent);
+            }, false);
 
-                let canvas = zone.querySelector('.section-drawing-canvas');
-                if (!canvas) {
-                    canvas = document.createElement('canvas');
-                    canvas.className = 'section-drawing-canvas';
-                    
-                    // Assign a unique ID if not present, to track history
-                    if (!zone.id) zone.id = `zone-auto-${index}`;
-                    canvas.dataset.sectionId = zone.id;
-                    
-                    // Initialize history for this canvas
-                    canvasHistories[zone.id] = {
-                        history: [],
-                        index: -1
-                    };
-                    
-                    zone.appendChild(canvas);
-                    setupCanvasEvents(canvas);
-                }
-            });
-            
-            resizeCanvases();
-            window.addEventListener('resize', resizeCanvases);
+            drawCanvas.addEventListener('touchend', (e) => {
+                const mouseEvent = new MouseEvent("mouseup", {});
+                drawCanvas.dispatchEvent(mouseEvent);
+            }, false);
         }
 
-        function resizeCanvases() {
-            document.querySelectorAll('.section-drawing-canvas').forEach(canvas => {
-                const parent = canvas.parentElement;
-                const rect = parent.getBoundingClientRect();
+        function resizeCanvas() {
+            if(drawCanvas) {
+                // Ensure canvas covers the full scrollable height
+                const docHeight = Math.max(
+                    document.body.scrollHeight, document.body.offsetHeight, 
+                    document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight
+                );
+                drawCanvas.width = document.documentElement.clientWidth;
+                drawCanvas.height = docHeight;
                 
-                // Only resize if dimensions changed to avoid clearing content unnecessarily
-                if (canvas.width !== rect.width || canvas.height !== rect.height) {
-                    canvas.width = rect.width;
-                    canvas.height = rect.height;
-                    
-                    const id = canvas.dataset.sectionId;
-                    const hist = canvasHistories[id];
-                    if (hist && hist.index >= 0) {
-                        const img = new Image();
-                        img.onload = () => canvas.getContext('2d').drawImage(img, 0, 0);
-                        img.src = hist.history[hist.index];
-                    }
+                // Redraw history if any (simple implementation: clear and restore last state if preserved in memory, but canvas resize clears it)
+                if (drawHistoryIndex >= 0) {
+                    const img = new Image();
+                    img.onload = () => drawCtx.drawImage(img, 0, 0);
+                    img.src = drawHistory[drawHistoryIndex];
                 }
-            });
-        }
-
-        function setupCanvasEvents(canvas) {
-            const ctx = canvas.getContext('2d');
-            
-            // Mouse/Touch Handlers tailored for "this" canvas
-            const start = (e) => startDrawingOnCanvas(e, canvas, ctx);
-            const move = (e) => drawOnCanvas(e, canvas, ctx);
-            const end = (e) => stopDrawingOnCanvas(e, canvas, ctx);
-
-            canvas.addEventListener('mousedown', start);
-            canvas.addEventListener('mousemove', move);
-            canvas.addEventListener('mouseup', end);
-            canvas.addEventListener('mouseout', end);
-            
-            // Passive false to allow preventing default scroll
-            canvas.addEventListener('touchstart', start, { passive: false });
-            canvas.addEventListener('touchmove', move, { passive: false });
-            canvas.addEventListener('touchend', end, { passive: false });
+            }
         }
 
         window.toggleDrawingMode = function() {
             isDrawMode = !isDrawMode;
             const fab = document.getElementById('btn-toggle-drawing');
             const toolbar = document.getElementById('drawing-toolbar');
+            const canvas = document.getElementById('drawing-canvas');
             const icon = document.getElementById('btn-toggle-icon');
 
             if (isDrawMode) {
-                document.body.classList.add('drawing-mode-active');
                 fab.classList.add('active');
-                icon.className = "fas fa-check"; 
+                icon.className = "fas fa-check"; // Checkmark to finish
                 toolbar.classList.remove('hidden');
-                
-                // Ensure size is correct upon activation
-                resizeCanvases();
+                canvas.classList.add('active');
+                // Ensure canvas is sized correctly before starting
+                resizeCanvas();
             } else {
-                document.body.classList.remove('drawing-mode-active');
                 fab.classList.remove('active');
                 icon.className = "fas fa-paint-brush";
                 toolbar.classList.add('hidden');
-            }
-        };
-
-        function getPointerPosOnCanvas(e, canvas) {
-            const rect = canvas.getBoundingClientRect();
-            let clientX, clientY;
-            
-            if (e.changedTouches && e.changedTouches.length > 0) {
-                clientX = e.changedTouches[0].clientX;
-                clientY = e.changedTouches[0].clientY;
-            } else if (e.touches && e.touches.length > 0) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
-
-            return {
-                x: clientX - rect.left,
-                y: clientY - rect.top
-            };
-        }
-
-        function startDrawingOnCanvas(e, canvas, ctx) {
-            if (!isDrawMode) return;
-            // Only prevent default if we are actively starting a draw
-            if (e.type === 'touchstart') e.preventDefault();
-            
-            isDrawing = true;
-            activeCanvas = canvas;
-            
-            const pos = getPointerPosOnCanvas(e, canvas);
-            drawStartX = pos.x; 
-            drawStartY = pos.y;  
-            
-            // Snapshot for shapes
-            if (currentDrawTool !== 'pencil' && currentDrawTool !== 'eraser') {
-                drawSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            }
-            
-            ctx.beginPath();
-            ctx.lineWidth = currentDrawSize;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = currentDrawTool === 'eraser' ? 'rgba(0,0,0,1)' : currentDrawColor; 
-            
-            if (currentDrawTool === 'eraser') {
-                ctx.globalCompositeOperation = 'destination-out';
-            } else {
-                ctx.globalCompositeOperation = 'source-over';
-            }
-
-            ctx.moveTo(drawStartX, drawStartY);
-        }
-
-        function drawOnCanvas(e, canvas, ctx) {
-            if (!isDrawing || activeCanvas !== canvas) return;
-            if (e.type === 'touchmove') e.preventDefault();
-
-            const pos = getPointerPosOnCanvas(e, canvas);
-            const x = pos.x;
-            const y = pos.y;
-
-            if (currentDrawTool === 'pencil' || currentDrawTool === 'eraser') {
-                ctx.lineTo(x, y);
-                ctx.stroke();
-            } else {
-                // Restore snapshot for shapes
-                ctx.putImageData(drawSnapshot, 0, 0);
-                ctx.beginPath();
-                ctx.moveTo(drawStartX, drawStartY);
-                
-                if (currentDrawTool === 'line') {
-                    ctx.lineTo(x, y);
-                    ctx.stroke();
-                } else if (currentDrawTool === 'rect') {
-                    ctx.rect(drawStartX, drawStartY, x - drawStartX, y - drawStartY);
-                    ctx.stroke();
-                } else if (currentDrawTool === 'circle') {
-                    const radius = Math.sqrt(Math.pow(x - drawStartX, 2) + Math.pow(y - drawStartY, 2));
-                    ctx.arc(drawStartX, drawStartY, radius, 0, 2 * Math.PI);
-                    ctx.stroke();
-                } else if (currentDrawTool === 'arrow') {
-                    drawArrow(ctx, drawStartX, drawStartY, x, y);
-                }
-            }
-        }
-
-        function drawArrow(ctx, fromx, fromy, tox, toy) {
-            const headlen = currentDrawSize * 3;
-            const dx = tox - fromx;
-            const dy = toy - fromy;
-            const angle = Math.atan2(dy, dx);
-            ctx.moveTo(fromx, fromy);
-            ctx.lineTo(tox, toy);
-            ctx.stroke();
-            
-            ctx.beginPath();
-            ctx.moveTo(tox, toy);
-            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
-            ctx.moveTo(tox, toy);
-            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
-            ctx.stroke();
-        }
-
-        function stopDrawingOnCanvas(e, canvas, ctx) {
-            if (!isDrawing || activeCanvas !== canvas) return;
-            if (e.type === 'touchend') e.preventDefault();
-            
-            isDrawing = false;
-            activeCanvas = null;
-            ctx.closePath();
-            saveCanvasState(canvas);
-        }
-
-        function saveCanvasState(canvas) {
-            const id = canvas.dataset.sectionId;
-            const h = canvasHistories[id];
-            
-            h.index++;
-            if (h.index < h.history.length) {
-                h.history.length = h.index;
-            }
-            h.history.push(canvas.toDataURL());
-            
-            // Also store a global "last modified canvas" for a simple global undo button (optional, usually per-canvas undo is hard with one button)
-            // For now, the UI has one global undo. We will make global undo affect the *last touched* canvas.
-            window.lastModifiedCanvasId = id; 
-        }
-
-        // Global Toolbar Functions
-        window.drawClear = function() {
-            // Clears ALL canvases
-            document.querySelectorAll('.section-drawing-canvas').forEach(canvas => {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                saveCanvasState(canvas);
-            });
-        };
-
-        window.drawUndo = function() {
-            // Try to undo the last modified canvas, or find one with history
-            const id = window.lastModifiedCanvasId;
-            if (id && canvasHistories[id]) {
-                undoCanvas(id);
-            } else {
-                // Fallback: iterate and undo the first one found with history? Or just do nothing.
-                // Simple approach: Alert user or just try active one.
-                // Better approach: Just try to undo the last interacted one.
-            }
-        };
-        
-        function undoCanvas(id) {
-            const h = canvasHistories[id];
-            const canvas = document.querySelector(`.section-drawing-canvas[data-section-id="${id}"]`);
-            const ctx = canvas.getContext('2d');
-            
-            if (h.index > 0) {
-                h.index--;
-                const img = new Image();
-                img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                };
-                img.src = h.history[h.index];
-            } else {
-                // Clear initial state
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                h.index = -1;
-            }
-        }
-
-        window.drawRedo = function() {
-            const id = window.lastModifiedCanvasId;
-            if (id && canvasHistories[id]) {
-                const h = canvasHistories[id];
-                if (h.index < h.history.length - 1) {
-                    h.index++;
-                    const canvas = document.querySelector(`.section-drawing-canvas[data-section-id="${id}"]`);
-                    const ctx = canvas.getContext('2d');
-                    const img = new Image();
-                    img.onload = () => {
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.drawImage(img, 0, 0);
-                    };
-                    img.src = h.history[h.index];
-                }
+                canvas.classList.remove('active');
             }
         };
 
         window.setDrawTool = function(tool) {
             currentDrawTool = tool;
             document.querySelectorAll('.dt-btn').forEach(b => b.classList.remove('active'));
-            // Visual update logic remains same
-            const map = { 'pencil':0, 'line':1, 'arrow':2, 'rect':3, 'circle':4, 'eraser':5 };
             const buttons = document.querySelectorAll('.dt-btn');
-            if(buttons[map[tool]]) buttons[map[tool]].classList.add('active');
+            // Mapping based on index
+            if(tool === 'pencil') buttons[0].classList.add('active');
+            if(tool === 'line') buttons[1].classList.add('active');
+            if(tool === 'arrow') buttons[2].classList.add('active');
+            if(tool === 'rect') buttons[3].classList.add('active');
+            if(tool === 'circle') buttons[4].classList.add('active');
+            if(tool === 'eraser') buttons[5].classList.add('active');
         };
 
         window.setDrawColor = function(color, el) {
@@ -2137,6 +1889,155 @@
         window.setDrawSize = function(size) {
             currentDrawSize = size;
         };
+
+        window.drawClear = function() {
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            saveDrawState();
+        };
+
+        window.drawUndo = function() {
+            if (drawHistoryIndex > 0) {
+                drawHistoryIndex--;
+                const img = new Image();
+                img.onload = () => {
+                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                    drawCtx.drawImage(img, 0, 0);
+                };
+                img.src = drawHistory[drawHistoryIndex];
+            } else {
+                drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                drawHistoryIndex = -1;
+            }
+        };
+
+        window.drawRedo = function() {
+            if (drawHistoryIndex < drawHistory.length - 1) {
+                drawHistoryIndex++;
+                const img = new Image();
+                img.onload = () => {
+                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                    drawCtx.drawImage(img, 0, 0);
+                };
+                img.src = drawHistory[drawHistoryIndex];
+            }
+        };
+
+        // --- SMART RESET LOGIC ---
+        // Function to clear a specific rectangular area on the main canvas corresponding to an element
+        window.clearZone = function(elementOrId) {
+            if (!drawCtx || !drawCanvas) return;
+            let el = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
+            if (!el) return;
+            
+            // Find the closest section container to clear
+            const zone = el.closest('section') || el.closest('.subsection-container') || el;
+            
+            const rect = zone.getBoundingClientRect();
+            const scrollX = window.scrollX || window.pageXOffset;
+            const scrollY = window.scrollY || window.pageYOffset;
+            
+            const x = rect.left + scrollX;
+            const y = rect.top + scrollY;
+            const w = rect.width;
+            const h = rect.height;
+            
+            // Clear only this area
+            drawCtx.clearRect(x, y, w, h);
+            saveDrawState(); // Save state so user can undo the auto-clear if accidental
+        };
+
+        function saveDrawState() {
+            drawHistoryIndex++;
+            if (drawHistoryIndex < drawHistory.length) {
+                drawHistory.length = drawHistoryIndex; // Remove future history if we drew something new
+            }
+            drawHistory.push(drawCanvas.toDataURL());
+        }
+
+        function startDrawing(e) {
+            if (!isDrawMode) return;
+            isDrawing = true;
+            // Get coordinates relative to canvas
+            const rect = drawCanvas.getBoundingClientRect();
+            drawStartX = e.clientX - rect.left; // x position within the element.
+            drawStartY = e.clientY - rect.top;  // y position within the element.
+            
+            // For shapes, save snapshot to restore while dragging
+            if (currentDrawTool !== 'pencil' && currentDrawTool !== 'eraser') {
+                drawSnapshot = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
+            }
+            
+            drawCtx.beginPath();
+            drawCtx.lineWidth = currentDrawSize;
+            drawCtx.lineCap = 'round';
+            drawCtx.lineJoin = 'round';
+            drawCtx.strokeStyle = currentDrawTool === 'eraser' ? 'rgba(0,0,0,1)' : currentDrawColor; // Eraser uses destination-out
+            
+            if (currentDrawTool === 'eraser') {
+                drawCtx.globalCompositeOperation = 'destination-out';
+            } else {
+                drawCtx.globalCompositeOperation = 'source-over';
+            }
+
+            // Move to start
+            drawCtx.moveTo(drawStartX, drawStartY);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = drawCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (currentDrawTool === 'pencil' || currentDrawTool === 'eraser') {
+                drawCtx.lineTo(x, y);
+                drawCtx.stroke();
+            } else {
+                // Restore snapshot for shapes (to avoid trail)
+                drawCtx.putImageData(drawSnapshot, 0, 0);
+                drawCtx.beginPath();
+                drawCtx.moveTo(drawStartX, drawStartY);
+                
+                if (currentDrawTool === 'line') {
+                    drawCtx.lineTo(x, y);
+                    drawCtx.stroke();
+                } else if (currentDrawTool === 'rect') {
+                    drawCtx.rect(drawStartX, drawStartY, x - drawStartX, y - drawStartY);
+                    drawCtx.stroke();
+                } else if (currentDrawTool === 'circle') {
+                    const radius = Math.sqrt(Math.pow(x - drawStartX, 2) + Math.pow(y - drawStartY, 2));
+                    drawCtx.arc(drawStartX, drawStartY, radius, 0, 2 * Math.PI);
+                    drawCtx.stroke();
+                } else if (currentDrawTool === 'arrow') {
+                    drawArrow(drawCtx, drawStartX, drawStartY, x, y);
+                }
+            }
+        }
+
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = currentDrawSize * 3; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            
+            // Draw head
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            drawCtx.closePath();
+            saveDrawState();
+        }
 
         // --- Touch Logic (Pinch & Pan) ---
         const viewerImage = document.getElementById('viewer-image');
@@ -2165,33 +2066,6 @@
 
             viewerModal.addEventListener('touchend', (e) => { isPinching = false; isDragging = false; if (currentViewerScale <= 1.1) { currentViewerScale = 1; translateX = 0; translateY = 0; updateTransform(); } });
             viewerModal.addEventListener('click', function(e) { if (e.target === this && !isDragging && !isPinching) { window.closeImageViewer(); } });
-        }
-        
-        // --- Helper to Clear Section Drawing ---
-        function clearSectionCanvas(element) {
-            // Updated: Find the closest drawing zone and clear it
-            const zone = element.closest('.drawing-zone');
-            if (zone && zone.id) {
-                clearZone(zone.id);
-            }
-        }
-
-        // New helper to clear a specific zone by ID
-        function clearZone(zoneId) {
-            const zone = document.getElementById(zoneId);
-            if (!zone) return;
-            
-            const canvas = zone.querySelector('.section-drawing-canvas');
-            if (canvas) {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // Reset history for this specific canvas
-                const id = canvas.dataset.sectionId;
-                if (canvasHistories[id]) {
-                    canvasHistories[id] = { history: [], index: -1 };
-                }
-            }
         }
 
         // --- WINDOW BINDING ---
@@ -2238,14 +2112,14 @@
         window.drawRedo = window.drawRedo;
 
         // --- Existing functions from previous context ---
+        // I'll add the essential ones back to ensure no breakage
         
         function selectOption(inputId, value, element, theme) {
             const input = document.getElementById(inputId);
             if(!input) return;
+            // Smart Reset: Clear the drawing zone for this section when changed
+            window.clearZone(element);
             
-            // Clear drawing for this zone because selection changed
-            clearSectionCanvas(element);
-
             input.value = value;
             const parent = element.parentElement;
             parent.querySelectorAll('.option-card').forEach(c => {
@@ -2259,9 +2133,9 @@
         }
 
         function selectSashBase(value, element) {
-            // Clear drawing for this section
-            clearSectionCanvas(element);
-
+            // Smart Reset: Clear the drawing zone for this section when changed
+            window.clearZone(element);
+            
             baseSashType = value;
             document.querySelectorAll('.sash-base-card').forEach(c => {
                 c.classList.remove('active-purple', 'active-gray');
@@ -2271,8 +2145,7 @@
         }
 
         function selectNoSash(element) {
-            clearSectionCanvas(element);
-
+            window.clearZone(element); // Smart Reset
             baseSashType = 'لا اريد وشاح';
             isAmericanSash = false; 
             document.querySelectorAll('.sash-base-card').forEach(c => {
@@ -2287,8 +2160,7 @@
         }
 
         function toggleAmericanCard(element) {
-            clearSectionCanvas(element);
-
+            window.clearZone(element); // Smart Reset
             if(baseSashType === 'لا اريد وشاح') return;
             isAmericanSash = !isAmericanSash;
             if (isAmericanSash) element.classList.add('active-purple');
@@ -2297,8 +2169,7 @@
         }
         
         function toggleCheckboxStyle(checkbox, theme = 'emerald') {
-            clearSectionCanvas(checkbox);
-
+            window.clearZone(checkbox); // Smart Reset
             const label = checkbox.parentElement;
             const activeClass = `checkbox-wrapper-active`; 
             if (checkbox.checked) label.classList.add(activeClass);
@@ -2374,18 +2245,11 @@
             const val = document.getElementById('sashType').value;
             const wrapper = document.getElementById('sashContentWrapper');
             const americanNotes = document.getElementById('sashSectionAmericanNotes');
-            
-            // Clear wrapper canvas when type changes significantly
-            clearZone('sashContentWrapper');
-            
             if (!val || val.includes('لا اريد')) { 
                 wrapper.classList.add('hidden'); 
                 americanNotes.classList.add('hidden');
             } else {
                 wrapper.classList.remove('hidden');
-                // !! IMPORTANT: Resize canvases immediately after unhiding to ensure they have correct dimensions !!
-                resizeCanvases();
-                
                 document.getElementById('sashSectionTwoSides').classList.toggle('hidden', val.includes('جانبي'));
                 document.getElementById('sashSectionOneSide').classList.toggle('hidden', !val.includes('جانبي'));
                 document.getElementById('sashSectionBack').classList.toggle('hidden', !val.includes('ملكي'));
@@ -2407,17 +2271,7 @@
         function handleCapTypeChange() {
             const val = document.getElementById('capType').value;
             const wrapper = document.getElementById('capContentWrapper');
-            
-            // Clear wrapper canvas on change
-            clearZone('capContentWrapper');
-            
-            if (val && !val.includes('لا اريد')) {
-                wrapper.classList.remove('hidden');
-                // !! IMPORTANT: Resize canvases immediately after unhiding !!
-                resizeCanvases();
-            } else {
-                wrapper.classList.add('hidden');
-            }
+            val && !val.includes('لا اريد') ? wrapper.classList.remove('hidden') : wrapper.classList.add('hidden');
             updateProgress();
         }
 
@@ -2443,25 +2297,10 @@
         function handleGownChange() {
             const val = document.getElementById('gownType').value;
             const wrapper = document.getElementById('gownContentWrapper');
+            val && !val.includes('لا اريد') ? wrapper.classList.remove('hidden') : wrapper.classList.add('hidden');
             const americanOptions = document.getElementById('americanGownOptions');
-            
-            // Clear dynamic zones
-            clearZone('gownContentWrapper');
-            clearZone('americanGownOptions');
-
-            if (val && !val.includes('لا اريد')) {
-                wrapper.classList.remove('hidden');
-                // !! IMPORTANT: Resize canvases immediately after unhiding !!
-                resizeCanvases();
-            } else {
-                wrapper.classList.add('hidden');
-            }
-            
             if (americanOptions) {
-                if (val === 'روب امريكي') {
-                    americanOptions.classList.remove('hidden');
-                    resizeCanvases(); // Ensure American options canvas is also sized correctly
-                }
+                if (val === 'روب امريكي') americanOptions.classList.remove('hidden');
                 else americanOptions.classList.add('hidden');
             }
             updateProgress();
@@ -3184,29 +3023,13 @@
             });
             clone.querySelectorAll('[id^="dynamic-sash-type-"]').forEach(el => el.removeAttribute('id'));
 
-            // --- Capture Section Drawings ---
-            // Iterate over all canvases in the original DOM
-            const canvases = document.querySelectorAll('.section-drawing-canvas');
-            canvases.forEach((canvas, index) => {
-                const id = canvas.dataset.sectionId;
-                const cloneCanvas = clone.querySelector(`.section-drawing-canvas[data-section-id="${id}"]`);
-                
-                if (cloneCanvas) {
-                    const dataUrl = canvas.toDataURL();
-                    // Replace canvas with image
-                    const img = document.createElement('img');
-                    img.src = dataUrl;
-                    img.style.position = 'absolute';
-                    img.style.top = '0';
-                    img.style.left = '0';
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                    /* Update: Use same z-index as drawing canvas so it covers inputs in saved form too */
-                    img.style.zIndex = '80'; 
-                    img.style.pointerEvents = 'none';
-                    cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
-                }
-            });
+            // Capture Drawing
+            let drawingOverlayHtml = '';
+            const canvasEl = document.getElementById('drawing-canvas');
+            if (canvasEl) {
+                const canvasDataUrl = canvasEl.toDataURL();
+                drawingOverlayHtml = `<img src="${canvasDataUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none;">`;
+            }
 
             let headContent = document.head.innerHTML;
             const desktopViewport = '<meta name="viewport" content="width=1280, user-scalable=yes">';
@@ -3235,8 +3058,7 @@
         #image-viewer-modal { display: none !important; }
         #collage-modal { display: none !important; }
         #drawing-fab-container { display: none !important; } 
-        /* Remove canvas styles for saved version as they are replaced by images */
-        .section-drawing-canvas { display: none !important; } 
+        #drawing-canvas { display: none !important; } 
         
         .instruction-trigger { cursor: default !important; background: none !important; }
         .instruction-trigger::before { content: none !important; }
@@ -3258,15 +3080,8 @@
     </style>
 </head>
 <body class="min-h-screen bg-gray-50">
-    <header class="bg-white shadow-lg sticky top-0 z-40 border-b-8 border-gray-200 mb-10 w-full relative">
-        <!-- Also capture header drawings if any -->
-        ${(() => {
-            const headerCanvas = document.querySelector('header .section-drawing-canvas');
-            if (headerCanvas) {
-                return `<img src="${headerCanvas.toDataURL()}" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:80; pointer-events:none;">`;
-            }
-            return '';
-        })()}
+    ${drawingOverlayHtml}
+    <header class="bg-white shadow-lg sticky top-0 z-40 border-b-8 border-gray-200 mb-10 w-full">
         <div class="w-full px-10 py-6 flex justify-between items-center">
              <h1 class="text-4xl font-black text-gray-900">استمارة الطالب: ${fullName}</h1>
              <span class="text-2xl font-black text-blue-800 bg-blue-100 px-6 py-3 rounded-full">نسخة للعرض فقط</span>
