@@ -1,0 +1,3232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1280, user-scalable=yes" id="viewport-meta">
+    <title>استمارة التخرج - النسخة المتكاملة والكبيرة</title>
+    
+    <!-- المكتبات الخارجية -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+    <!-- Import Map for Gemini API -->
+    <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.run/@google/genai",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+
+    <style>
+        /* ========================================= */
+        /* --- الأساسيات --- */
+        /* ========================================= */
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f1f5f9;
+            width: 1280px;
+            min-width: 1280px;
+            margin: 0 auto; 
+            padding: 0;
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-size: 20px; 
+        }
+
+        /* ========================================= */
+        /* --- تخصيص SweetAlert2 (النوافذ المنبثقة) --- */
+        /* ========================================= */
+        .swal2-container {
+            z-index: 10000000 !important; /* ضمان الظهور فوق كل شيء */
+        }
+        .swal2-popup {
+            font-size: 2.2rem !important; /* حجم خط أساسي كبير */
+            width: 950px !important;      /* عرض عريض جداً */
+            padding: 3rem !important;
+            border-radius: 3rem !important;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5) !important;
+        }
+        .swal2-title {
+            font-size: 4rem !important;
+            font-weight: 900 !important;
+            margin-bottom: 1.5rem !important;
+            line-height: 1.4 !important;
+        }
+        .swal2-html-container {
+            font-size: 2.8rem !important;
+            line-height: 1.6 !important;
+            margin: 2rem 0 !important;
+        }
+        .swal2-icon {
+            width: 8em !important;        /* أيقونة ضخمة */
+            height: 8em !important;
+            margin: 2.5rem auto 2.5rem !important;
+            border-width: .4em !important;
+        }
+        .swal2-icon .swal2-icon-content {
+            font-size: 6rem !important;
+        }
+        .swal2-actions {
+            gap: 2rem !important;
+            margin-top: 2rem !important;
+        }
+        .swal2-confirm, .swal2-deny, .swal2-cancel {
+            font-size: 2.5rem !important;
+            padding: 1.5rem 4rem !important;
+            border-radius: 2rem !important;
+            font-weight: 800 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        /* تكبير عناصر الإدخال داخل التنبيهات مع تقليل الحجم قليلاً */
+        .swal2-input, .swal2-textarea {
+            height: 5rem !important;
+            font-size: 1.8rem !important; /* تقليل حجم الخط */
+            margin: 2.5rem auto !important;
+        }
+
+        /* --- زر المساعدة المطور --- */
+        .help-btn {
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 1.5rem; 
+            font-weight: 800;
+            padding: 8px 20px; 
+            border-radius: 1rem; 
+            color: white; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            line-height: 1;
+        }
+        .help-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
+        .help-btn:active { transform: translateY(0) scale(0.98); }
+        .help-btn i { font-size: 1.4rem; }
+
+        .btn-purple { background: linear-gradient(135deg, #7e22ce, #6b21a8); }
+        .btn-indigo { background: linear-gradient(135deg, #4f46e5, #4338ca); }
+        .btn-emerald { background: linear-gradient(135deg, #059669, #047857); }
+
+        /* --- نافذة التعليمات --- */
+        #custom-instruction-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 9999999;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .instruction-sheet {
+            background-color: #ffffff;
+            width: 98%;
+            max-width: 1260px;
+            height: 98vh;
+            border-radius: 3rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8);
+            border: 6px solid #e2e8f0;
+            overflow: hidden;
+            position: relative;
+            animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .instruction-header {
+            padding: 2.5rem;
+            background-color: #fff;
+            border-bottom: 5px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .instruction-title {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #1e293b;
+        }
+
+        .btn-close-modal {
+            background-color: #fee2e2;
+            color: #ef4444;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-close-modal:hover { background-color: #ef4444; color: white; }
+
+        .instruction-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 3rem;
+            background-color: #f8fafc;
+            scrollbar-width: thin;
+        }
+
+        /* --- تصميم محتويات التعليمات --- */
+        .instruction-group-item {
+            background: white;
+            border-radius: 2.5rem;
+            padding: 2.5rem;
+            margin-bottom: 4rem;
+            border: 4px solid #e2e8f0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        .group-item-title {
+            font-size: 3.2rem;
+            font-weight: 900;
+            color: #1e3a8a;
+            margin-bottom: 1.5rem;
+            border-right: 12px solid #3b82f6;
+            padding-right: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .group-item-desc {
+            font-size: 2.4rem;
+            line-height: 1.6;
+            color: #000000; /* تم تغيير اللون للأسود */
+            margin-bottom: 2.5rem;
+            padding-right: 35px;
+            font-weight: 700;
+        }
+
+        /* حاوية الصور الأفقية */
+        .item-gallery-container {
+            width: 100%;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: #94a3b8 #f1f5f9;
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .item-gallery-container::-webkit-scrollbar { height: 16px; }
+        .item-gallery-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .item-gallery-container::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 8px; border: 3px solid #f1f5f9; }
+
+        .gallery-img-wrapper {
+            display: inline-block;
+            width: 100%; 
+            max-width: 950px; 
+            min-width: 950px; 
+            aspect-ratio: 1 / 1; 
+            border-radius: 2rem;
+            overflow: hidden;
+            border: 5px solid #cbd5e1;
+            position: relative;
+            background-color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        }
+
+        .gallery-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            background-color: #f8fafc;
+            cursor: zoom-in;
+            transition: transform 0.3s;
+        }
+        .gallery-img-wrapper img:hover {
+            transform: scale(1.02);
+        }
+
+        .gallery-placeholder-item {
+            width: 950px; 
+            height: 950px;
+            background-color: #f1f5f9;
+            border-radius: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            border: 5px dashed #cbd5e1;
+            flex-shrink: 0;
+        }
+        .gallery-placeholder-item i { font-size: 8rem; margin-bottom: 1.5rem; }
+        .gallery-placeholder-item span { font-size: 2.5rem; font-weight: 800; }
+
+        /* --- تنسيقات العناصر الفرعية (الكسرات) --- */
+        .sub-item-container {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 4px dashed #e2e8f0;
+        }
+        .sub-item-title {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: #059669; 
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .sub-item-title i { font-size: 2rem; }
+        .sub-item-desc {
+            font-size: 2rem;
+            color: #000000; /* تم تغيير اللون للأسود */
+            margin-bottom: 2rem;
+            padding-right: 40px;
+        }
+
+        /* --- Standard Styles --- */
+        .option-card { cursor: pointer; border: 5px solid #cbd5e1; border-radius: 1.2rem; padding: 2rem 1rem; font-size: 1.7rem; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background-color: white; min-height: 140px; font-weight: 900; color: #1e293b; position: relative; }
+        .option-card:hover { border-color: #64748b; transform: translateY(-5px); box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.15); }
+        .option-card.active-purple { background-color: #f3e8ff; border-color: #7e22ce; color: #581c87; box-shadow: 0 0 0 6px #d8b4fe; transform: scale(1.02); z-index: 10; }
+        .option-card.active-indigo { background-color: #e0e7ff; border-color: #4f46e5; color: #312e81; box-shadow: 0 0 0 5px #a5b4fc; transform: scale(1.02); z-index: 10; }
+        .option-card.active-emerald { background-color: #d1fae5; border-color: #059669; color: #064e3b; box-shadow: 0 0 0 5px #6ee7b7; transform: scale(1.02); z-index: 10; }
+        .option-card.active-gray { background-color: #f3f4f6; border-color: #4b5563; color: #111827; box-shadow: 0 0 0 5px #9ca3af; transform: scale(1.02); z-index: 10; }
+        .checkbox-wrapper-active { background-color: #d1fae5 !important; border-color: #059669 !important; color: #064e3b !important; box-shadow: 0 0 0 4px #6ee7b7 !important; }
+        .upload-container-wrapper { width: 100%; max-width: 100%; margin: 0 auto; }
+        .upload-box { width: 100%; aspect-ratio: 1 / 1; border: 5px dashed #94a3b8; border-radius: 1.5rem; position: relative; background-color: #f8fafc; transition: all 0.3s; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .upload-box:hover { border-color: #3b82f6; background-color: #eff6ff; }
+        .upload-box.has-image { border-style: solid; border-color: #cbd5e1; background-color: #fff; border-width: 5px; }
+        .upload-placeholder { text-align: center; color: #64748b; pointer-events: none; padding: 1rem; }
+        .upload-placeholder i { font-size: 5rem !important; margin-bottom: 1.5rem; } 
+        .upload-placeholder span { font-size: 1.8rem !important; font-weight: 900; }
+        .uploaded-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .img-actions { position: absolute; top: 15px; right: 15px; display: flex; gap: 15px; z-index: 50; opacity: 1 !important; }
+        .action-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: white !important; border: none; cursor: pointer; box-shadow: 0 5px 10px rgba(0,0,0,0.4); border: 3px solid white; }
+        .btn-edit { background-color: #3b82f6 !important; }
+        .btn-delete { background-color: #ef4444 !important; }
+        .action-btn i { color: white !important; }
+        
+        /* --- تقليل حجم الخط والحشوة بشكل موحد --- */
+        .custom-input, input[type="text"], textarea { 
+            transition: all 0.2s; 
+            padding: 1rem !important; /* تقليل الحواف */
+            border-width: 4px !important; 
+            font-size: 1.5rem !important; /* حجم خط موحد وصغير (28-30px تقريباً) لجميع الحقول */
+            font-weight: 700 !important;
+            border-radius: 1.5rem !important;
+        }
+        .custom-input:focus, input[type="text"]:focus, textarea:focus { 
+            transform: translateY(-3px); 
+            border-color: #3b82f6; 
+            outline: none;
+        }
+        
+        /* === تخصيص حقل الاسم ليكون أكبر قليلاً (مشابه لحجم خط الكروت) === */
+        #input-fullName {
+            font-size: 2.2rem !important; 
+            padding: 1.5rem !important;
+            font-weight: 900 !important;
+        }
+        
+        .hidden { display: none !important; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 99999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-width: 1280px; }
+        .loader { border: 12px solid #f3f3f3; border-top: 12px solid #3b82f6; border-radius: 50%; width: 120px; height: 120px; animation: spin 1s linear infinite; margin-bottom: 40px; }
+        #loading-text { font-size: 3rem; font-weight: 900; color: #1e293b; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .subsection-title { margin-bottom: 2rem; padding-bottom: 1.5rem; }
+        .subsection-container { background-color: #ffffff; border: 4px solid #cbd5e1; border-radius: 2rem; padding: 2.5rem; margin-bottom: 2.5rem; }
+        .inner-subtitle { font-size: 1.6rem; font-weight: 900; margin-bottom: 2rem; display: inline-block; border-right: 8px solid; padding-right: 16px; }
+        
+        /* إضافة ستايل جديد لرسائل التحقق */
+        .validation-message {
+            color: #ef4444; /* red-500 */
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-top: 1rem;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Image Editor Styles */
+        #image-editor-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #0f172a; z-index: 200000; display: none; flex-direction: column; min-width: 1280px; touch-action: none; transform-origin: top left; }
+        .editor-header { display: flex; justify-content: space-between; items-center; padding: 30px 50px; height: 140px; background-color: #1e293b; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 10; }
+        .top-action-btn { display: flex; align-items: center; gap: 15px; padding: 15px 40px; border-radius: 3rem; font-weight: 900; font-size: 2rem; cursor: pointer; transition: all 0.2s; border: none; }
+        .btn-cancel-edit { color: #f1f5f9; background: #334155; }
+        .btn-save-edit { background: #3b82f6; color: white; }
+        .header-controls { display: flex; align-items: center; gap: 30px; }
+        .history-btn { background: rgba(255,255,255,0.1); color: white; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; cursor: pointer; transition: 0.2s; border: 2px solid rgba(255,255,255,0.2); }
+        .history-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .editor-workspace { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 40px; background-color: #000; touch-action: none; }
+        .cropper-view-box { outline: 6px solid #22c55e !important; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85); }
+        .cropper-line { background-color: transparent !important; }
+        .cropper-point { width: 50px !important; height: 50px !important; background-color: #22c55e !important; border-radius: 50% !important; border: 5px solid white !important; margin: -25px !important; opacity: 1 !important; }
+        .cropper-center { display: none !important; }
+        .floating-toolbar { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); background: #1e293b; border: 3px solid #334155; padding: 20px 60px; border-radius: 5rem; display: flex; gap: 80px; box-shadow: 0 30px 60px rgba(0,0,0,0.8); width: 80%; justify-content: center; z-index: 20; }
+        .tool-btn { display: flex; flex-direction: column; align-items: center; gap: 15px; color: #94a3b8; background: transparent; border: none; cursor: pointer; padding: 10px; }
+        .tool-btn i { font-size: 4rem; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5)); }
+        .tool-btn span { font-size: 1.8rem; font-weight: 800; }
+        .tool-btn:hover, .tool-btn.active { color: #60a5fa; transform: scale(1.1); }
+        .rotation-controls { position: absolute; bottom: 240px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 900px; display: flex; align-items: center; justify-content: space-between; gap: 20px; z-index: 40; background: rgba(30, 41, 59, 0.9); padding: 15px 30px; border-radius: 4rem; border: 2px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .mini-rotate-btn { background: rgba(255,255,255,0.1); border: none; color: white; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; transition: 0.2s; }
+        .mini-rotate-btn:active { background: #3b82f6; transform: scale(0.95); }
+        .rotation-slider { -webkit-appearance: none; flex-grow: 1; height: 8px; background: rgba(255,255,255,0.2); border-radius: 5px; outline: none; margin: 0 15px; }
+        .rotation-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%; background: #3b82f6; cursor: pointer; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .rotation-label { color: #94a3b8; font-size: 1.2rem; font-weight: bold; width: 40px; text-align: center; }
+        #btn-floating-save { position: absolute; bottom: 360px; left: 50%; transform: translateX(-50%) scale(0.5); background: #22c55e; color: white; padding: 15px 60px; border-radius: 4rem; font-size: 2.2rem; font-weight: 900; box-shadow: 0 15px 40px rgba(34, 197, 94, 0.6); display: flex; align-items: center; gap: 15px; z-index: 50; border: 4px solid white; cursor: pointer; opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #btn-floating-save.visible { opacity: 1; transform: translateX(-50%) scale(1); pointer-events: auto; }
+        @media print { .no-print { display: none !important; } }
+        
+        /* --- Image Viewer Modal (Lightbox) الجديد --- */
+        #image-viewer-modal {
+            display: none;
+            position: fixed;
+            z-index: 20000000; /* أعلى من نافذة التعليمات */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: rgba(0,0,0,0.95);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            touch-action: none; /* لمنع حركات المتصفح الافتراضية */
+        }
+
+        #viewer-image {
+            display: block;
+            max-width: 100%;
+            max-height: 100vh;
+            object-fit: contain;
+            /* الإعدادات للحركة */
+            transform-origin: center center;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-drag: none;
+            touch-action: none;
+            transition: transform 0.1s linear; /* حركة ناعمة */
+        }
+
+        .viewer-close {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            color: #f1f1f1;
+            font-size: 4rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 20000001;
+            transition: 0.3s;
+            background: rgba(255,255,255,0.15);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        .viewer-close:hover { background: rgba(255,255,255,0.3); color: white; transform: rotate(90deg); }
+        
+        .viewer-hint {
+            position: absolute;
+            bottom: 40px;
+            color: rgba(255,255,255,0.6);
+            font-size: 1.5rem;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        /* --- AI Assistant Styles --- */
+        .ai-suggestion {
+            font-size: 1.4rem;
+            color: #059669; /* emerald-600 */
+            background-color: #ecfdf5; /* emerald-50 */
+            border: 2px solid #34d399;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            display: none; /* Hidden by default */
+            align-items: center;
+            gap: 1rem;
+            animation: fadeIn 0.5s;
+        }
+        .ai-suggestion.visible { display: flex; }
+        .ai-suggestion i { color: #059669; font-size: 1.6rem; }
+        .ai-suggestion-text { font-weight: 700; }
+        
+        .ai-loading { 
+            color: #3b82f6; 
+            font-size: 1.4rem; 
+            margin-top: 0.5rem; 
+            display: none; 
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+        }
+        .ai-loading.visible { display: flex; }
+        .ai-loading i { animation: spin 1s infinite linear; }
+
+        /* --- Collage Modal Styles --- */
+        #collage-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(15, 23, 42, 0.95);
+            z-index: 300000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .collage-card {
+            background-color: white;
+            width: 90%;
+            max-width: 1000px;
+            border-radius: 2rem;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .collage-preview-container {
+            width: 100%;
+            aspect-ratio: 1/1;
+            background-color: #f1f5f9;
+            border-radius: 1rem;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 4px dashed #cbd5e1;
+        }
+        .collage-preview-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .collage-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        .btn-collage-primary {
+            background-color: #7e22ce;
+            color: white;
+            padding: 1rem 3rem;
+            border-radius: 1.5rem;
+            font-weight: 800;
+            font-size: 1.8rem;
+            transition: all 0.2s;
+        }
+        .btn-collage-primary:hover { background-color: #6b21a8; transform: translateY(-2px); }
+        .btn-collage-secondary {
+            background-color: #e2e8f0;
+            color: #475569;
+            padding: 1rem 3rem;
+            border-radius: 1.5rem;
+            font-weight: 800;
+            font-size: 1.8rem;
+            transition: all 0.2s;
+        }
+        .btn-collage-secondary:hover { background-color: #cbd5e1; }
+        
+        .tool-btn-small {
+            background: #f1f5f9;
+            color: #475569;
+            border: 2px solid #cbd5e1;
+            padding: 10px 20px;
+            border-radius: 1rem;
+            font-weight: 800;
+            font-size: 1.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .tool-btn-small:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+            color: #334155;
+        }
+
+        /* --- Drawing Tool CSS --- */
+        .drawing-canvas {
+            position: fixed; /* Changed from absolute to fixed to ensure it stays on screen */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            pointer-events: none; /* Initially pass-through to allow form interaction */
+        }
+        .drawing-canvas.active {
+            pointer-events: auto; /* Capture events when drawing mode is on */
+            cursor: crosshair;
+            background-color: rgba(255, 255, 255, 0.05); /* Slight tint to indicate mode */
+        }
+        
+        /* Floating Button Container - Centered Horizontal Strip */
+        #drawing-fab-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            display: flex;
+            flex-direction: row; /* Horizontal */
+            align-items: center;
+            gap: 15px;
+            direction: ltr; /* Ensure tools are LTR */
+        }
+        
+        #btn-toggle-drawing {
+            width: 70px; /* Slightly smaller for strip balance */
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            box-shadow: 0 10px 25px rgba(234, 88, 12, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            border: 4px solid white;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            order: 2; /* Toggle on the right */
+            flex-shrink: 0;
+        }
+        #btn-toggle-drawing:hover { transform: scale(1.1); box-shadow: 0 15px 35px rgba(234, 88, 12, 0.5); }
+        #btn-toggle-drawing.active { background: #ef4444; transform: rotate(0deg); }
+        #btn-toggle-icon.active-icon { transform: rotate(45deg); } /* Handle icon rotation specifically if needed */
+
+        /* Toolbar Styling - Horizontal Strip */
+        #drawing-toolbar {
+            background-color: white;
+            border-radius: 100px; /* Full pill shape */
+            padding: 10px 30px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            border: 4px solid #fed7aa;
+            transform-origin: center right;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 0;
+            min-width: auto;
+            width: max-content;
+            order: 1; /* Toolbar on the left */
+        }
+        #drawing-toolbar.hidden { display: none; }
+
+        .dt-section-title { display: none; } /* Hide titles */
+        
+        .dt-row { 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 0 !important; /* Override inline styles if any */
+            align-items: center;
+        }
+        
+        /* Groups inside toolbar */
+        #drawing-toolbar > div {
+            display: flex;
+            align-items: center;
+            border-right: 2px solid #e2e8f0;
+            padding-right: 15px;
+        }
+        #drawing-toolbar > div:last-child, 
+        #drawing-toolbar > div:nth-last-child(2) { /* Adjust for the buttons at end */
+            border-right: none;
+            padding-right: 0;
+        }
+
+        /* Tools Buttons */
+        .dt-btn {
+            width: 45px; height: 45px; /* Smaller buttons for strip */
+            border-radius: 12px;
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .dt-btn:hover { background-color: #e0f2fe; color: #0284c7; transform: translateY(-2px); }
+        .dt-btn.active { background-color: #0ea5e9; color: white; border-color: #0284c7; box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3); }
+        
+        /* Color Swatches */
+        .dt-color {
+            width: 35px; height: 35px; /* Smaller swatches */
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .dt-color:hover { transform: scale(1.15); }
+        .dt-color.active { box-shadow: 0 0 0 3px #0f172a; transform: scale(1.1); z-index: 2; }
+        
+        /* Size Slider */
+        .dt-slider { -webkit-appearance: none; width: 80px; height: 8px; background: #e2e8f0; border-radius: 10px; outline: none; margin: 0 10px; }
+        .dt-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #0ea5e9; border-radius: 50%; cursor: pointer; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        /* Action Buttons */
+        .dt-action { 
+            padding: 0 15px; 
+            height: 45px;
+            border-radius: 12px; 
+            font-weight: 800; 
+            font-size: 1rem; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 5px; 
+            border: none; 
+            cursor: pointer; 
+            transition: 0.2s; 
+        }
+        .dt-undo-redo { background: #f1f5f9; color: #475569; }
+        .dt-undo-redo:hover { background: #cbd5e1; }
+        .dt-clear { background: #fee2e2; color: #ef4444; width: auto !important; }
+        .dt-clear:hover { background: #ef4444; color: white; }
+
+        @keyframes popIn { from { opacity: 0; transform: scaleX(0.5); } to { opacity: 1; transform: scaleX(1); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body class="min-h-screen pb-40">
+
+    <div id="loading-overlay">
+        <div class="loader"></div>
+        <h3 id="loading-text">جاري المعالجة...</h3>
+    </div>
+
+    <!-- Drawing Canvas -->
+    <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
+
+    <!-- Drawing Floating UI -->
+    <div id="drawing-fab-container" class="no-print">
+        
+        <!-- Toolbar Strip -->
+        <div id="drawing-toolbar" class="hidden">
+            <!-- Tools Group -->
+            <div>
+                <div class="dt-row">
+                    <button class="dt-btn active" onclick="window.setDrawTool('pencil')" title="قلم حر"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="dt-btn" onclick="window.setDrawTool('line')" title="خط مستقيم"><i class="fas fa-slash" style="transform: rotate(-45deg);"></i></button>
+                    <button class="dt-btn" onclick="window.setDrawTool('arrow')" title="سهم"><i class="fas fa-long-arrow-alt-right" style="transform: rotate(-45deg);"></i></button>
+                    <button class="dt-btn" onclick="window.setDrawTool('rect')" title="مربع/مستطيل"><i class="far fa-square"></i></button>
+                    <button class="dt-btn" onclick="window.setDrawTool('circle')" title="دائرة"><i class="far fa-circle"></i></button>
+                    <button class="dt-btn" onclick="window.setDrawTool('eraser')" title="ممحاة"><i class="fas fa-eraser"></i></button>
+                </div>
+            </div>
+
+            <!-- Colors Group -->
+            <div>
+                <div class="dt-row">
+                    <div class="dt-color active" style="background: #ef4444;" onclick="window.setDrawColor('#ef4444', this)"></div>
+                    <div class="dt-color" style="background: #3b82f6;" onclick="window.setDrawColor('#3b82f6', this)"></div>
+                    <div class="dt-color" style="background: #22c55e;" onclick="window.setDrawColor('#22c55e', this)"></div>
+                    <div class="dt-color" style="background: #eab308;" onclick="window.setDrawColor('#eab308', this)"></div>
+                    <div class="dt-color" style="background: #000000;" onclick="window.setDrawColor('#000000', this)"></div>
+                </div>
+            </div>
+
+            <!-- Size Group -->
+            <div>
+                <input type="range" min="2" max="20" value="5" class="dt-slider" oninput="window.setDrawSize(this.value)" title="حجم الخط">
+            </div>
+
+            <!-- Actions Group -->
+            <div class="dt-row">
+                <button class="dt-action dt-undo-redo" onclick="window.drawUndo()"><i class="fas fa-undo"></i></button>
+                <button class="dt-action dt-undo-redo" onclick="window.drawRedo()"><i class="fas fa-redo"></i></button>
+                <button class="dt-action dt-clear" onclick="window.drawClear()"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        </div>
+
+        <!-- Toggle Button -->
+        <button id="btn-toggle-drawing" onclick="window.toggleDrawingMode()">
+            <i id="btn-toggle-icon" class="fas fa-paint-brush"></i>
+        </button>
+    </div>
+
+    <!-- نافذة التعليمات المخصصة الجديدة -->
+    <div id="custom-instruction-modal">
+        <div class="instruction-sheet">
+            <!-- الرأس الثابت -->
+            <div class="instruction-header">
+                <button class="btn-close-modal" onclick="window.closeInstructionPopup()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h3 id="modal-title" class="instruction-title">عنوان التعليمات</h3>
+            </div>
+            
+            <!-- الجسم المتغير -->
+            <div class="instruction-body" id="instruction-content-area">
+                <!-- المحتوى يظهر هنا -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Collage Maker Modal -->
+    <div id="collage-modal">
+        <div class="collage-card">
+            <div class="flex justify-between items-center border-b-4 border-gray-100 pb-4 mb-2">
+                <h3 class="text-3xl font-black text-gray-800">صانع الكولاج الذكي</h3>
+                <button onclick="window.closeCollageMaker()" class="text-red-500 text-4xl hover:text-red-700 transition"><i class="fas fa-times-circle"></i></button>
+            </div>
+            
+            <div class="text-center mb-4">
+                <label for="collage-input" class="cursor-pointer bg-purple-50 text-purple-700 border-4 border-purple-200 hover:bg-purple-100 hover:border-purple-400 transition py-6 px-10 rounded-2xl inline-flex flex-col items-center gap-2 w-full">
+                    <i class="fas fa-images text-5xl mb-2"></i>
+                    <span class="text-2xl font-black">اضغط هنا لاختيار 2 إلى 4 صور</span>
+                    <span class="text-lg text-gray-500 font-bold">سيتم دمجها تلقائياً بشكل فني</span>
+                </label>
+                <input type="file" id="collage-input" class="hidden" multiple accept="image/*" onchange="window.handleCollageFiles(this.files)">
+            </div>
+
+            <div class="collage-preview-container" id="collage-preview-box">
+                <div id="collage-placeholder-text" class="text-gray-400 text-center">
+                    <i class="fas fa-magic text-6xl mb-4"></i>
+                    <p class="text-2xl font-bold">المعاينة ستظهر هنا</p>
+                </div>
+                <img id="collage-result-img" class="hidden shadow-lg border-4 border-white rounded-xl">
+            </div>
+
+            <div id="collage-toolbar" class="hidden flex justify-center gap-6 mb-4 mt-6">
+                <button onclick="window.changeCollageLayout()" class="tool-btn-small" title="تغيير التخطيط"><i class="fas fa-th-large"></i> تغيير التخطيط</button>
+                <button onclick="window.shuffleCollage()" class="tool-btn-small" title="خلط الصور"><i class="fas fa-random"></i> إعادة ترتيب الصور</button>
+                <button onclick="window.toggleCollageFit()" class="tool-btn-small" title="تغيير نمط العرض"><i class="fas fa-expand"></i> احتواء / ملء</button>
+            </div>
+
+            <div class="collage-actions">
+                <button onclick="window.closeCollageMaker()" class="btn-collage-secondary">إلغاء</button>
+                <button id="btn-save-collage" onclick="window.saveCollage()" class="btn-collage-primary opacity-50 cursor-not-allowed" disabled>
+                    <i class="fas fa-check ml-2"></i> اعتماد الصورة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white shadow-lg sticky top-0 z-40 no-print border-b-8 border-gray-200 mb-10 w-full">
+        <div class="w-full px-10 py-6 flex flex-row justify-between items-center gap-8">
+            <h1 class="text-4xl font-black text-gray-900">استمارة زي التخرج الذكية</h1>
+            
+            <div class="w-1/3 flex flex-col items-center">
+                <div class="w-full bg-gray-200 rounded-full h-8 overflow-hidden shadow-inner border-2 border-gray-300">
+                    <div id="progress-bar" class="bg-gradient-to-l from-blue-600 to-blue-800 h-8 rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+                </div>
+                <span id="progress-text" class="text-2xl font-black text-blue-800 mt-3">جاري البدء...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-form-container" class="w-full mt-10 px-10 space-y-10">
+        <form id="gradForm" onsubmit="return false;">
+
+            <!-- Info Section -->
+            <section class="bg-white p-10 rounded-[2.5rem] shadow-lg border-8 border-gray-100 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-4 h-full bg-blue-600"></div>
+                <!-- تعديل هذا القسم لإضافة الصورة -->
+                <div class="flex items-center justify-between mb-10">
+                    <div class="flex items-center gap-6">
+                        <i class="fas fa-user-graduate text-blue-600 bg-blue-100 p-5 rounded-3xl text-5xl"></i> 
+                        <h2 class="text-5xl font-black text-gray-900">قسم المعلومات</h2>
+                    </div>
+                    <!-- إضافة الصورة هنا (يسار العنوان) - الأبعاد الجديدة 250px للطول و 200px للعرض -->
+                    <img id="image-falah" src="فلاح.jpg" alt="صورة فلاح" class="h-auto object-cover" 
+                         style="width: 200px; height: 250px; border-radius: 1.2rem;"> 
+                </div>
+                <!-- نهاية التعديل -->
+                <div class="w-full">
+                    <label class="block text-gray-800 font-black mb-4 text-4xl">الاسم الرباعي (إجباري)</label>
+                    <input type="text" name="fullName" id="input-fullName" class="custom-input w-full p-6 border-4 border-gray-300 rounded-3xl focus:ring-4 focus:ring-blue-600 outline-none bg-gray-50 text-xl font-black text-gray-900" placeholder="اكتب اسمك الرباعي كاملاً..." required oninput="window.handleNameInput()" onblur="window.cleanNameInput(this)">
+                    <!-- رسالة التحقق من الاسم -->
+                    <p id="name-warning-msg" class="text-2xl text-red-600 mt-4 mr-3 font-black hidden">
+                        <i class="fas fa-exclamation-circle ml-2"></i> 
+                        <span id="name-warning-text">يجب كتابة الاسم مكوناً من 4 مقاطع على الأقل.</span>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Sash Section -->
+            <section class="bg-white p-10 rounded-[2.5rem] shadow-lg border-8 border-gray-100 relative overflow-hidden" id="sash-section">
+                <div class="absolute top-0 right-0 w-4 h-full bg-purple-600"></div>
+                <h2 class="text-5xl font-black mb-10 text-gray-900 flex items-center gap-6">
+                    <i class="fas fa-ribbon text-purple-600 bg-purple-100 p-5 rounded-3xl"></i> أولاً: الوشاح
+                </h2>
+
+                <div class="subsection-container border-purple-200">
+                    <div class="border-b-4 border-purple-100 pb-2 mb-6 flex justify-between items-end">
+                        <h3 class="text-3xl font-black text-purple-900 flex items-center gap-4">
+                            <span class="bg-purple-200 text-purple-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">1</span>
+                            نوع الوشاح
+                        </h3>
+                        <button type="button" onclick="window.openPreloadedInstruction('sash-type-group', 'أنواع الوشاح')" class="help-btn btn-purple">
+                            <i class="fas fa-question-circle"></i>
+                            مساعدة
+                        </button>
+                    </div>
+                    
+                    <input type="hidden" id="sashType" name="sashType">
+                    <div class="grid grid-cols-4 gap-6" id="sashTypeOptions">
+                        <div class="option-card hover:bg-purple-50 sash-base-card" onclick="window.selectSashBase('عادي', this)">عادي</div>
+                        <div class="option-card hover:bg-purple-50 sash-base-card" onclick="window.selectSashBase('مثلث', this)">مثلث</div>
+                        <div class="option-card hover:bg-purple-50 sash-base-card" onclick="window.selectSashBase('ملكي فرعوني', this)">ملكي فرعوني</div>
+                        <div class="option-card hover:bg-purple-50 sash-base-card" onclick="window.selectSashBase('ملكي مثلث', this)">ملكي مثلث</div>
+                        <div class="option-card hover:bg-purple-50 sash-base-card" onclick="window.selectSashBase('ملكي مقوس', this)">ملكي مقوس</div>
+                        <div class="option-card hover:bg-purple-50 sash-base-card" onclick="window.selectSashBase('جانبي', this)">جانبي</div>
+                        <div class="option-card hover:bg-purple-50" id="card-american-toggle" onclick="window.toggleAmericanCard(this)">
+                            + امريكي
+                        </div>
+                        <div class="option-card hover:bg-red-50 sash-base-card" id="card-no-sash" onclick="window.selectNoSash(this)">
+                            <span class="text-red-600 font-black">لا اريد وشاح</span>
+                        </div>
+                    </div>
+                    <p id="sashType-validation-msg" class="validation-message hidden">
+                        <i class="fas fa-exclamation-circle ml-2"></i> 
+                        <span>مطلوب (يرجى اختيار نوع الوشاح).</span>
+                    </p>
+                </div>
+
+                <div id="sashContentWrapper" class="hidden space-y-8">
+                    <div id="sashEndsContainer" class="subsection-container border-purple-200">
+                        <div class="border-b-4 border-purple-100 pb-2 mb-6 flex justify-between items-end">
+                            <h3 class="text-3xl font-black text-purple-900 flex items-center gap-4">
+                                نوع نهايتي الوشاح
+                                <!-- مكان ظهور نوع الوشاح المختار -->
+                                <span id="dynamic-sash-type-ends" class="text-red-600 text-2xl mr-4"></span>
+                            </h3>
+                            <button type="button" onclick="window.openPreloadedInstruction('sash-ends-group', 'نهايات الوشاح')" class="help-btn btn-purple">
+                                <i class="fas fa-question-circle"></i>
+                                مساعدة
+                            </button>
+                        </div>
+
+                        <input type="hidden" id="sashEndsType" name="sashEndsType">
+                        <div class="flex flex-row justify-center gap-8" id="sashEndsOptions">
+                            <div class="option-card w-1/3 py-4 text-3xl font-black hover:bg-purple-50" onclick="window.selectOption('sashEndsType', 'نهاية مثلثة', this, 'purple')">نهاية مثلثة</div>
+                            <div class="option-card w-1/3 py-4 text-3xl font-black hover:bg-purple-50" onclick="window.selectOption('sashEndsType', 'نهاية مائلة', this, 'purple')">نهاية مائلة</div>
+                        </div>
+                        <p id="sashEndsType-validation-msg" class="validation-message hidden">
+                            <i class="fas fa-exclamation-circle ml-2"></i> 
+                            <span>مطلوب (يرجى اختيار نوع نهايتي الوشاح).</span>
+                        </p>
+                    </div>
+
+                    <div class="subsection-container border-purple-200 bg-purple-50/50">
+                        <div class="border-b-4 border-purple-100 pb-2 mb-6 flex justify-between items-end">
+                            <h3 class="text-3xl font-black text-purple-900 flex items-center gap-4">
+                                <span class="bg-purple-200 text-purple-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">2</span>
+                                التطريز على الوشاح
+                                <!-- مكان ظهور نوع الوشاح المختار -->
+                                <span id="dynamic-sash-type-embroidery" class="text-red-600 text-2xl mr-4"></span>
+                            </h3>
+                            <button type="button" onclick="window.openPreloadedInstruction('sash-embroidery-group', 'التطريز على الوشاح')" class="help-btn btn-purple">
+                                <i class="fas fa-question-circle"></i>
+                                مساعدة
+                            </button>
+                        </div>
+
+                        <div id="sashEmbroideryWrapper">
+                            <div class="mb-8">
+                                <h4 class="inner-subtitle text-purple-900 border-purple-600">التطريز من الامام</h4>
+                                <div id="sashSectionTwoSides" class="hidden">
+                                    <div class="grid grid-cols-2 gap-10 justify-items-center">
+                                        <div class="upload-container-wrapper">
+                                            <label class="block text-2xl font-black text-gray-700 mb-4 text-center">الجهة اليمنى</label>
+                                            <div id="upload-sash-right"></div>
+                                            <textarea name="sashRightText" id="sashRightText" class="mt-5 w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-bold focus:ring-4 focus:ring-purple-600 outline-none resize-none bg-white placeholder-gray-400" rows="6" placeholder="وصف التطريز..."></textarea>
+                                            <p id="sashRight-validation-msg" class="validation-message hidden">
+                                                <i class="fas fa-exclamation-circle ml-2"></i> 
+                                                <span>مطلوب (يرجى إدخال نص أو صورة على الأقل للجهة اليمنى).</span>
+                                            </p>
+                                        </div>
+                                        <div class="upload-container-wrapper">
+                                            <label class="block text-2xl font-black text-gray-700 mb-4 text-center">الجهة اليسرى</label>
+                                            <div id="upload-sash-left"></div>
+                                            <textarea name="sashLeftText" id="sashLeftText" class="mt-5 w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-bold focus:ring-4 focus:ring-purple-600 outline-none resize-none bg-white placeholder-gray-400" rows="6" placeholder="وصف التطريز..."></textarea>
+                                            <p id="sashLeft-validation-msg" class="validation-message hidden">
+                                                <i class="fas fa-exclamation-circle ml-2"></i> 
+                                                <span>مطلوب (يرجى إدخال نص أو صورة على الأقل للجهة اليسرى).</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="sashSectionOneSide" class="hidden">
+                                    <div class="flex justify-center">
+                                        <div class="upload-container-wrapper w-3/5">
+                                            <label class="block text-2xl font-black text-gray-700 mb-4 text-center">صورة التطريز</label>
+                                            <div id="upload-sash-side-1"></div>
+                                            <textarea name="sashSideText" id="sashSideText" class="mt-5 w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-bold focus:ring-4 focus:ring-purple-600 outline-none resize-none bg-white placeholder-gray-400" rows="6" placeholder="وصف التطريز..."></textarea>
+                                        </div>
+                                    </div>
+                                    <p id="sashOneSide-validation-msg" class="validation-message hidden">
+                                        <i class="fas fa-exclamation-circle ml-2"></i> 
+                                        <span>مطلوب (يرجى إدخال نص أو صورة على الأقل لتطريز الوشاح الجانبي).</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div id="sashSectionBack" class="hidden pt-8 border-t-8 border-purple-200">
+                                <h4 class="inner-subtitle text-purple-900 border-purple-600">التطريز من الخلف (خاص بالوشاح الملكي)</h4>
+                                 <div class="grid grid-cols-2 gap-10 justify-items-center mb-6">
+                                    <div class="upload-container-wrapper">
+                                        <div id="upload-sash-back-1"></div>
+                                    </div>
+                                    <div class="upload-container-wrapper">
+                                        <div id="upload-sash-back-2"></div>
+                                    </div>
+                                </div>
+                                <div class="w-full">
+                                    <textarea name="sashBackText" id="sashBackText" class="mt-2 w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-bold focus:ring-4 focus:ring-purple-600 outline-none resize-none bg-white placeholder-gray-400" rows="6" placeholder="وصف التطريز الخلفي (للصورتين)..."></textarea>
+                                </div>
+                                <p id="sashBack-validation-msg" class="validation-message hidden">
+                                    <i class="fas fa-exclamation-circle ml-2"></i> 
+                                    <span>مطلوب (يرجى إدخال نص أو صورة على الأقل لتطريز الوشاح الخلفي).</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="subsection-container border-purple-200">
+                        <div class="border-b-4 border-purple-100 pb-2 mb-6 flex justify-between items-end">
+                            <h3 class="text-3xl font-black text-purple-900 flex items-center gap-4">
+                                <span class="bg-purple-200 text-purple-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">3</span>
+                                تنسيق الالوان
+                                <!-- مكان ظهور نوع الوشاح المختار -->
+                                <span id="dynamic-sash-type-colors" class="text-red-600 text-2xl mr-4"></span>
+                            </h3>
+                            <button type="button" onclick="window.openPreloadedInstruction('sash-colors-group', 'تنسيق ألوان الوشاح')" class="help-btn btn-purple">
+                                <i class="fas fa-question-circle"></i>
+                                مساعدة
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-8">
+                            <div>
+                                <label class="block text-gray-800 text-3xl font-black mb-4">لون الوشاح</label>
+                                <input type="text" name="sashColor" id="sashColor" class="custom-input w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-black bg-gray-50" placeholder="مثلا: ماروني">
+                                <p id="sashColor-validation-msg" class="validation-message hidden">
+                                    <i class="fas fa-exclamation-circle ml-2"></i> 
+                                    <span>مطلوب (يرجى ملء حقل لون الوشاح).</span>
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-gray-800 text-3xl font-black mb-4">لون الكركوشة</label>
+                                <input type="text" name="sashTasselColor" id="sashTasselColor" class="custom-input w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-black bg-gray-50" placeholder="مثلا: ذهبي">
+                                <p id="sashTasselColor-validation-msg" class="validation-message hidden">
+                                    <i class="fas fa-exclamation-circle ml-2"></i> 
+                                    <span>مطلوب (يرجى ملء حقل لون الكركوشة).</span>
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-gray-800 text-3xl font-black mb-4">لون التطريز</label>
+                                <input type="text" name="sashEmbroideryColor" id="sashEmbroideryColor" class="custom-input w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-black bg-gray-50" placeholder="مثلا: أبيض">
+                                <p id="sashEmbroideryColor-validation-msg" class="validation-message hidden">
+                                    <i class="fas fa-exclamation-circle ml-2"></i> 
+                                    <span>مطلوب (يرجى ملء حقل لون التطريز).</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="subsection-container border-purple-200">
+                        <div class="border-b-4 border-purple-100 pb-2 mb-6 flex justify-between items-end">
+                            <h3 class="text-3xl font-black text-purple-900 flex items-center gap-4">
+                                <span class="bg-purple-200 text-purple-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">4</span>
+                                ملاحظات إضافية
+                            </h3>
+                        </div>
+                        
+                        <div id="sashSectionAmericanNotes" class="hidden mb-8 border-b-4 border-purple-100 pb-8">
+                             <div class="flex justify-between items-center mb-6">
+                                <h4 class="inner-subtitle text-purple-900 border-purple-600 mb-0">ملاحظات حول الوشاح الامريكي (إجباري)</h4>
+                                <button type="button" onclick="window.openPreloadedInstruction('sash-american-notes-group', 'ملاحظات الوشاح الامريكي')" class="help-btn btn-purple">
+                                    <i class="fas fa-question-circle"></i>
+                                    مساعدة
+                                </button>
+                            </div>
+                             <div class="grid grid-cols-2 gap-10 justify-items-center mb-6">
+                                <div class="upload-container-wrapper">
+                                    <div id="upload-sash-american-1"></div>
+                                </div>
+                                <div class="upload-container-wrapper">
+                                    <div id="upload-sash-american-2"></div>
+                                </div>
+                            </div>
+                            <div class="w-full">
+                                <textarea name="sashAmericanText" id="sashAmericanText" class="mt-2 w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-bold focus:ring-4 focus:ring-purple-600 outline-none resize-none bg-white placeholder-gray-400" rows="6" placeholder="ملاحظات حول الوشاح الأمريكي..."></textarea>
+                            </div>
+                            <p id="sashAmericanNotes-validation-msg" class="validation-message hidden">
+                                <i class="fas fa-exclamation-circle ml-2"></i> 
+                                <span>مطلوب (يرجى إدخال نص أو صورة على الأقل لملاحظات الوشاح الأمريكي).</span>
+                            </p>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-6">
+                                <h4 class="inner-subtitle text-purple-900 border-purple-600 mb-0">ملاحظة إضافية عامة</h4>
+                                <button type="button" onclick="window.openPreloadedInstruction('sash-notes-group', 'ملاحظات الوشاح الإضافية')" class="help-btn btn-purple">
+                                    <i class="fas fa-question-circle"></i>
+                                    مساعدة
+                                </button>
+                            </div>
+                            <div class="flex flex-row gap-8 items-stretch">
+                                <div class="flex-1">
+                                    <textarea name="sashNotes" class="custom-input w-full h-full min-h-[250px] p-4 border-4 border-gray-300 rounded-3xl text-xl font-bold resize-none shadow-sm focus:border-purple-500 bg-gray-50" placeholder="اكتب أي تفاصيل إضافية عامة هنا..."></textarea>
+                                </div>
+                                <div class="w-[450px] flex-shrink-0 flex flex-col">
+                                    <label class="block text-purple-900 text-2xl font-black mb-4 text-center">صورة توضيحية (اختياري)</label>
+                                    <div class="upload-container-wrapper w-full">
+                                        <div id="upload-sash-notes"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cap Section -->
+            <section class="bg-white p-10 rounded-[2.5rem] shadow-lg border-8 border-gray-100 relative overflow-hidden" id="cap-section">
+                <div class="absolute top-0 right-0 w-4 h-full bg-indigo-600"></div>
+                <h2 class="text-5xl font-black mb-10 text-gray-900 flex items-center gap-6">
+                    <i class="fas fa-graduation-cap text-indigo-600 bg-indigo-100 p-5 rounded-3xl"></i> ثانياً: القبعة
+                </h2>
+                <div class="subsection-container border-indigo-200">
+                    <div class="border-b-4 border-indigo-100 pb-2 mb-6 flex justify-between items-end">
+                        <h3 class="text-3xl font-black text-indigo-900 flex items-center gap-4">
+                            <span class="bg-indigo-200 text-indigo-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">1</span>
+                            نوع القبعة
+                        </h3>
+                        <button type="button" onclick="window.openPreloadedInstruction('cap-type-group', 'أنواع القبعة')" class="help-btn btn-indigo">
+                            <i class="fas fa-question-circle"></i>
+                            مساعدة
+                        </button>
+                    </div>
+
+                    <input type="hidden" id="capType" name="capType">
+                    <div class="grid grid-cols-3 gap-6" id="capTypeOptions">
+                        <div class="option-card hover:bg-indigo-50" onclick="window.selectOption('capType', 'قبعة عادية', this, 'indigo')">   قبعة دائرية عدلة (عادية)   </div>
+                        <div class="option-card hover:bg-indigo-50" onclick="window.selectOption('capType', 'قبعة ملكية', this, 'indigo')">قبعة مثلث (ملكية)</div>
+                        <div class="option-card hover:bg-red-50" onclick="window.selectOption('capType', 'لا اريد قبعة', this, 'gray')">
+                            <span class="text-red-600 font-black">لا اريد قبعة</span>
+                        </div>
+                    </div>
+                    <p id="capType-validation-msg" class="validation-message hidden">
+                        <i class="fas fa-exclamation-circle ml-2"></i> 
+                        <span>مطلوب (يرجى اختيار نوع القبعة).</span>
+                    </p>
+                </div>
+                <div id="capContentWrapper" class="hidden space-y-8">
+                    <div class="subsection-container border-indigo-200 bg-indigo-50/50">
+                        <div class="border-b-4 border-indigo-100 pb-2 mb-6 flex justify-between items-end">
+                            <h3 class="text-3xl font-black text-indigo-900 flex items-center gap-4">
+                                <span class="bg-indigo-200 text-indigo-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">2</span>
+                                التطريز على القبعة
+                            </h3>
+                            <button type="button" onclick="window.openPreloadedInstruction('cap-embroidery-group', 'التطريز على القبعة')" class="help-btn btn-indigo">
+                                <i class="fas fa-question-circle"></i>
+                                مساعدة
+                            </button>
+                        </div>
+
+                        <div class="mb-8">
+                            <label class="block text-gray-800 text-3xl font-black mb-6 text-center">حدد مكان التطريز أولاً</label>
+                            <input type="hidden" id="capEmbroideryLoc" name="capEmbroideryLoc">
+                            <div class="grid grid-cols-4 gap-6" id="capEmbroideryOptions">
+                                <div class="option-card py-6 min-h-[120px] hover:bg-indigo-50" onclick="window.selectOption('capEmbroideryLoc', 'فوق القبعة', this, 'indigo')">فوق القبعة</div>
+                                <div class="option-card py-6 min-h-[120px] hover:bg-indigo-50" onclick="window.selectOption('capEmbroideryLoc', 'طوق القبعة', this, 'indigo')">طوق القبعة</div>
+                                <div class="option-card py-6 min-h-[120px] hover:bg-indigo-50" onclick="window.selectOption('capEmbroideryLoc', 'دبل تطريز', this, 'indigo')">دبل تطريز</div>
+                                <div class="option-card py-6 min-h-[120px] hover:bg-red-50" onclick="window.selectOption('capEmbroideryLoc', 'لا اريد تطريز', this, 'gray')">لا اريد تطريز</div>
+                            </div>
+                            <p id="capEmbroideryLoc-validation-msg" class="validation-message hidden">
+                                <i class="fas fa-exclamation-circle ml-2"></i> 
+                                <span>مطلوب (يرجى تحديد مكان التطريز على القبعة).</span>
+                            </p>
+                        </div>
+                        <div class="flex flex-row gap-8 justify-center">
+                            <div id="capSectionTop" class="hidden w-1/2 p-8 rounded-3xl border-4 border-indigo-200 bg-white">
+                                <h3 class="font-black text-2xl text-indigo-900 mb-5 text-center">صورة التطريز (فوق القبعة)</h3>
+                                <div class="upload-container-wrapper">
+                                    <div id="upload-cap-top"></div>
+                                    <textarea name="capTopText" id="capTopText" class="mt-5 w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-bold focus:ring-4 focus:ring-indigo-600 outline-none resize-none bg-white placeholder-gray-400" rows="6" placeholder="وصف التطريز..."></textarea>
+                                </div>
+                                <p id="capTopContent-validation-msg" class="validation-message hidden text-center">
+                                    <i class="fas fa-exclamation-circle ml-2"></i> 
+                                    <span>مطلوب (يرجى إدخال نص أو صورة).</span>
+                                </p>
+                            </div>
+                            <div id="capSectionRim" class="hidden w-1/2 p-8 rounded-3xl border-4 border-indigo-200 bg-white">
+                                <h3 class="font-black text-2xl text-indigo-900 mb-5 text-center">صورة التطريز (طوق القبعة)</h3>
+                                <div class="upload-container-wrapper">
+                                    <div id="upload-cap-rim"></div>
+                                    <textarea name="capRimText" id="capRimText" class="mt-5 w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-bold focus:ring-4 focus:ring-indigo-600 outline-none resize-none bg-white placeholder-gray-400" rows="6" placeholder="وصف التطريز..."></textarea>
+                                </div>
+                                <p id="capRimContent-validation-msg" class="validation-message hidden text-center">
+                                    <i class="fas fa-exclamation-circle ml-2"></i> 
+                                    <span>مطلوب (يرجى إدخال نص أو صورة).</span>
+                                </p>
+                            </div>
+                        </div>
+                        <p id="capEmbroideryContent-validation-msg" class="validation-message hidden">
+                            <i class="fas fa-exclamation-circle ml-2"></i> 
+                            <span>مطلوب (يرجى إدخال نص أو صورة على الأقل للتطريز المختار).</span>
+                        </p>
+                    </div>
+                    <div class="subsection-container border-indigo-200">
+                        <div class="border-b-4 border-indigo-100 pb-2 mb-6 flex justify-between items-end">
+                            <h3 class="text-3xl font-black text-indigo-900 flex items-center gap-4">
+                                <span class="bg-indigo-200 text-indigo-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">3</span>
+                                تنسيق الالوان
+                            </h3>
+                            <button type="button" onclick="window.openPreloadedInstruction('cap-colors-group', 'تنسيق ألوان القبعة')" class="help-btn btn-indigo">
+                                <i class="fas fa-question-circle"></i>
+                                مساعدة
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-8">
+                            <div>
+                                <label class="block text-gray-800 text-3xl font-black mb-4">لون القبعة</label>
+                                <input type="text" name="capColor" id="capColor" class="custom-input w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-black bg-gray-50" placeholder="مثلا: أسود">
+                                <p id="capColor-validation-msg" class="validation-message hidden">
+                                    <i class="fas fa-exclamation-circle ml-2"></i> 
+                                    <span>مطلوب (يرجى ملء حقل لون القبعة).</span>
+                                </p>
+                            </div>
+                            <div id="capEmbroideryColorField">
+                                <label class="block text-gray-800 text-3xl font-black mb-4">لون التطريز</label>
+                                <input type="text" name="capEmbroideryColor" id="capEmbroideryColor" class="custom-input w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-black bg-gray-50" placeholder="مثلا: ذهبي">
+                                <p id="capEmbroideryColor-validation-msg" class="validation-message hidden">
+                                    <i class="fas fa-exclamation-circle ml-2"></i> 
+                                    <span>مطلوب (يرجى ملء حقل لون التطريز).</span>
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-gray-800 text-3xl font-black mb-4">لون الكركوشة</label>
+                                <input type="text" name="capTasselColor" id="capTasselColor" class="custom-input w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-black bg-gray-50" placeholder="مثلا: أصفر">
+                                <p id="capTasselColor-validation-msg" class="validation-message hidden">
+                                    <i class="fas fa-exclamation-circle ml-2"></i> 
+                                    <span>مطلوب (يرجى ملء حقل لون الكركوشة).</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="subsection-container border-indigo-200">
+                        <div class="border-b-4 border-indigo-100 pb-2 mb-6 flex justify-between items-end">
+                            <h3 class="text-3xl font-black text-indigo-900 flex items-center gap-4">
+                                <span class="bg-indigo-200 text-indigo-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">4</span>
+                                ملاحظات إضافية
+                            </h3>
+                            <button type="button" onclick="window.openPreloadedInstruction('cap-notes-group', 'ملاحظات القبعة الإضافية')" class="help-btn btn-indigo">
+                                <i class="fas fa-question-circle"></i>
+                                مساعدة
+                            </button>
+                        </div>
+
+                         <div class="flex flex-row gap-8 items-stretch">
+                            <div class="flex-1">
+                                <textarea name="capNotes" class="custom-input w-full h-full min-h-[250px] p-4 border-4 border-gray-300 rounded-3xl text-xl font-bold resize-none shadow-sm focus:border-indigo-500 bg-gray-50" placeholder="اكتب أي تفاصيل إضافية هنا..."></textarea>
+                            </div>
+                            <div class="w-[450px] flex-shrink-0 flex flex-col">
+                                <label class="block text-indigo-900 text-2xl font-black mb-4 text-center">صورة توضيحية (اختياري)</label>
+                                <div class="upload-container-wrapper w-full">
+                                    <div id="upload-cap-notes"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gown Section -->
+            <section class="bg-white p-10 rounded-[2.5rem] shadow-lg border-8 border-gray-100 relative overflow-hidden" id="gown-section">
+                 <div class="absolute top-0 right-0 w-4 h-full bg-emerald-600"></div>
+                <h2 class="text-5xl font-black mb-10 text-gray-900 flex items-center gap-6">
+                    <i class="fas fa-tshirt text-emerald-600 bg-emerald-100 p-5 rounded-3xl"></i> ثالثاً: الروب
+                </h2>
+                <div class="subsection-container border-emerald-200">
+                    <div class="border-b-4 border-emerald-100 pb-2 mb-6 flex justify-between items-end">
+                        <h3 class="text-3xl font-black text-emerald-900 flex items-center gap-4">
+                            <span class="bg-emerald-200 text-emerald-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">1</span>
+                            نوع الروب
+                        </h3>
+                        <button type="button" onclick="window.openPreloadedInstruction('gown-type-group', 'أنواع الروب')" class="help-btn btn-emerald">
+                            <i class="fas fa-question-circle"></i>
+                            مساعدة
+                        </button>
+                    </div>
+
+                    <input type="hidden" id="gownType" name="gownType">
+                    <div class="grid grid-cols-3 gap-6" id="gownTypeOptions">
+                        <div class="option-card hover:bg-emerald-50" onclick="window.selectOption('gownType', 'روب خليجي', this, 'emerald')">روب خليجي</div>
+                        <div class="option-card hover:bg-emerald-50" onclick="window.selectOption('gownType', 'روب امريكي', this, 'emerald')">روب امريكي</div>
+                        <div class="option-card hover:bg-red-50" onclick="window.selectOption('gownType', 'لا اريد روب', this, 'gray')">
+                            <span class="text-red-600 font-black">لا اريد روب</span>
+                        </div>
+                    </div>
+                    <p id="gownType-validation-msg" class="validation-message hidden">
+                        <i class="fas fa-exclamation-circle ml-2"></i> 
+                        <span>مطلوب (يرجى اختيار نوع الروب).</span>
+                    </p>
+
+                    <!-- خيارات الروب الأمريكي -->
+                    <div id="americanGownOptions" class="hidden mt-8 pt-6 border-t-4 border-emerald-100">
+                        <h4 class="text-2xl font-black text-emerald-800 mb-6 text-center">خيارات الروب الأمريكي (اختَر كسرة واحدة على الأقل)</h4>
+                        <div class="flex flex-row flex-wrap justify-center gap-6 px-4" id="americanPleatsOptions">
+                            <label class="flex items-center gap-4 cursor-pointer p-5 rounded-2xl transition border-4 border-emerald-200 bg-emerald-50/30 hover:bg-emerald-100 checkbox-label" id="label-pleats-shoulder">
+                                <input type="checkbox" name="americanGownPleats[]" value="كسرات كتف" onchange="window.toggleCheckboxStyle(this, 'emerald', 'كسرات كتف')" class="w-10 h-10 text-emerald-600 rounded-xl border-4 border-emerald-300 focus:ring-emerald-500" style="accent-color: #059669;">
+                                <span class="text-3xl font-black text-gray-800">كسرات كتف</span>
+                            </label>
+                            
+                            <label class="flex items-center gap-4 cursor-pointer p-5 rounded-2xl transition border-4 border-emerald-200 bg-emerald-50/30 hover:bg-emerald-100 checkbox-label" id="label-pleats-chest">
+                                <input type="checkbox" name="americanGownPleats[]" value="كسرات الصدر" onchange="window.toggleCheckboxStyle(this, 'emerald', 'كسرات الصدر')" class="w-10 h-10 text-emerald-600 rounded-xl border-4 border-emerald-300 focus:ring-emerald-500" style="accent-color: #059669;">
+                                <span class="text-3xl font-black text-gray-800">كسرات الصدر</span>
+                            </label>
+
+                            <label class="flex items-center gap-4 cursor-pointer p-5 rounded-2xl transition border-4 border-emerald-200 bg-emerald-50/30 hover:bg-emerald-100 checkbox-label" id="label-pleats-back">
+                                <input type="checkbox" name="americanGownPleats[]" value="كسرات الظهر" onchange="window.toggleCheckboxStyle(this, 'emerald', 'كسرات الظهر')" class="w-10 h-10 text-emerald-600 rounded-xl border-4 border-emerald-300 focus:ring-emerald-500" style="accent-color: #059669;">
+                                <span class="text-3xl font-black text-gray-800">كسرات الظهر</span>
+                            </label>
+                        </div>
+                        <p id="americanPleats-validation-msg" class="validation-message hidden text-center">
+                            <i class="fas fa-exclamation-circle ml-2"></i> 
+                            <span>مطلوب (يرجى اختيار كسرة واحدة على الأقل للروب الأمريكي).</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div id="gownContentWrapper" class="hidden space-y-8">
+                    <!-- قسم إضافات الروب -->
+                    <div class="subsection-container border-emerald-200">
+                        <div class="border-b-4 border-emerald-100 pb-2 mb-6 flex justify-between items-end">
+                            <h3 class="text-3xl font-black text-emerald-900 flex items-center gap-4">
+                                <span class="bg-emerald-200 text-emerald-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">2</span>
+                                إضافات الروب
+                            </h3>
+                            <button type="button" onclick="window.openPreloadedInstruction('gown-additions-group', 'إضافات الروب')" class="help-btn btn-emerald">
+                                <i class="fas fa-question-circle"></i>
+                                مساعدة
+                            </button>
+                        </div>
+                        
+                        <div class="flex flex-col gap-6 px-10 items-center">
+                             <label class="flex items-center gap-6 cursor-pointer p-6 rounded-3xl transition border-4 border-emerald-200 bg-emerald-50/30 hover:bg-emerald-100 w-full max-w-3xl checkbox-label" id="label-gown-trim">
+                                <input type="checkbox" name="gownAdditions[]" value="تطعيم الردان بلون الوشاح" onchange="window.toggleCheckboxStyle(this, 'emerald', 'تطعيم الردان')" class="w-10 h-10 text-emerald-600 rounded-xl border-4 border-emerald-300 focus:ring-emerald-500" style="accent-color: #059669;">
+                                <span class="text-3xl font-bold text-gray-800">تطعيم الردان بلون الوشاح</span>
+                            </label>
+                            
+                            <label class="flex items-center gap-6 cursor-pointer p-6 rounded-3xl transition border-4 border-emerald-200 bg-emerald-50/30 hover:bg-emerald-100 w-full max-w-3xl checkbox-label" id="label-gown-embroidery">
+                                <input type="checkbox" name="gownAdditions[]" value="تطريز الردان" onchange="window.toggleCheckboxStyle(this, 'emerald', 'تطريز الردان'); window.handleGownEmbroideryChange(this)" class="w-10 h-10 text-emerald-600 rounded-xl border-4 border-emerald-300 focus:ring-emerald-500" style="accent-color: #059669;">
+                                <span class="text-3xl font-bold text-gray-800">تطريز الردان</span>
+                            </label>
+                        </div>
+
+                        <div id="gownEmbroideryUploadSection" class="hidden mt-8 pt-6 border-t-4 border-emerald-100 bg-emerald-50/30 rounded-2xl p-6">
+                            <h4 class="text-2xl font-black text-emerald-800 mb-6 text-center">تفاصيل تطريز الردان</h4>
+                             <div class="flex justify-center">
+                                <div class="upload-container-wrapper w-3/5">
+                                    <label class="block text-2xl font-black text-gray-700 mb-4 text-center">صورة التطريز</label>
+                                    <div id="upload-gown-embroidery"></div>
+                                    <textarea name="gownEmbroideryText" id="gownEmbroideryText" class="mt-5 w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-bold focus:ring-4 focus:ring-emerald-600 outline-none resize-none bg-white placeholder-gray-400" rows="6" placeholder="وصف التطريز..."></textarea>
+                                </div>
+                            </div>
+                            <p id="gownEmbroidery-validation-msg" class="validation-message hidden text-center">
+                                <i class="fas fa-exclamation-circle ml-2"></i> 
+                                <span>مطلوب (يرجى إدخال نص أو صورة على الأقل لتطريز الردان).</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="subsection-container border-emerald-200">
+                        <div class="border-b-4 border-emerald-100 pb-2 mb-6 flex justify-between items-end">
+                            <h3 class="text-3xl font-black text-emerald-900 flex items-center gap-4">
+                                <span class="bg-emerald-200 text-emerald-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">3</span>
+                                تنسيق الالوان
+                            </h3>
+                            <button type="button" onclick="window.openPreloadedInstruction('gown-colors-group', 'تنسيق ألوان الروب')" class="help-btn btn-emerald">
+                                <i class="fas fa-question-circle"></i>
+                                مساعدة
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-8">
+                            <div>
+                                <label class="block text-gray-800 text-3xl font-black mb-4">لون الروب</label>
+                                <input type="text" name="gownColor" id="gownColor" class="custom-input w-full p-4 border-4 border-gray-300 rounded-2xl text-xl font-black bg-gray-50" placeholder="مثلا: أسود">
+                                <p id="gownColor-validation-msg" class="validation-message hidden">
+                                    <i class="fas fa-exclamation-circle ml-2"></i> 
+                                    <span>مطلوب (يرجى ملء حقل لون الروب).</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="subsection-container border-emerald-200">
+                        <div class="border-b-4 border-emerald-100 pb-2 mb-6 flex justify-between items-end">
+                            <h3 class="text-3xl font-black text-emerald-900 flex items-center gap-4">
+                                <span class="bg-emerald-200 text-emerald-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">4</span>
+                                ملاحظات إضافية
+                            </h3>
+                            <button type="button" onclick="window.openPreloadedInstruction('gown-notes-group', 'ملاحظات الروب الإضافية')" class="help-btn btn-emerald">
+                                <i class="fas fa-question-circle"></i>
+                                مساعدة
+                            </button>
+                        </div>
+
+                         <div class="flex flex-row gap-8 items-stretch">
+                            <div class="flex-1">
+                                <textarea name="gownNotes" class="custom-input w-full h-full min-h-[250px] p-4 border-4 border-gray-300 rounded-3xl text-xl font-bold resize-none shadow-sm focus:border-emerald-500 bg-gray-50" placeholder="اكتب أي تفاصيل إضافية هنا..."></textarea>
+                            </div>
+                            <div class="w-[450px] flex-shrink-0 flex flex-col">
+                                <label class="block text-emerald-900 text-2xl font-black mb-4 text-center">صورة توضيحية (اختياري)</label>
+                                <div class="upload-container-wrapper w-full">
+                                    <div id="upload-gown-notes"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="w-full flex justify-center py-12 no-print mt-14 border-t-8 border-gray-200">
+                <button onclick="window.initiateSendProcess()" class="w-2/3 p-10 bg-green-600 text-white rounded-full shadow-2xl hover:bg-green-700 transition transform hover:scale-105 flex items-center justify-center gap-6 font-black text-4xl ring-8 ring-green-200 group">
+                    <span class="group-hover:animate-pulse"><i class="fas fa-paper-plane text-5xl ml-2"></i></span>
+                    إرسال واعتماد الطلب
+                </button>
+            </div>
+
+        </form>
+    </main>
+
+    <!-- IMAGE EDITOR MODAL (Unchanged) -->
+    <div id="image-editor-modal">
+        <div class="editor-header">
+            <button onclick="window.closeEditor()" class="top-action-btn btn-cancel-edit"><i class="fas fa-times"></i> إلغاء</button>
+            <div class="header-controls">
+                <button onclick="window.undoEdit()" class="history-btn" id="btn-undo" disabled><i class="fas fa-undo"></i></button>
+                <button onclick="window.redoEdit()" class="history-btn" id="btn-redo" disabled><i class="fas fa-redo"></i></button>
+            </div>
+            <button onclick="window.saveEditorImage()" class="top-action-btn btn-save-edit"><i class="fas fa-check"></i> إدراج</button>
+        </div>
+        <div class="editor-workspace">
+            <img id="editor-image-target" src="" alt="Editing Image" style="max-width: 100%; display: block;">
+            <button id="btn-floating-save" onclick="window.saveIntermediateChanges()">
+                <i class="fas fa-check-circle"></i> حفظ التغييرات
+            </button>
+            <div class="rotation-controls">
+                <button onclick="window.rotate90(-90)" class="mini-rotate-btn" title="تدوير يسار 90°"><i class="fas fa-undo"></i></button>
+                <div class="flex items-center flex-grow mx-4">
+                    <span class="rotation-label">-45°</span>
+                    <input type="range" min="-45" max="45" value="0" class="rotation-slider" oninput="window.handleRotation(this.value)">
+                    <span class="rotation-label">+45°</span>
+                </div>
+                <button onclick="window.rotate90(90)" class="mini-rotate-btn" title="تدوير يمين 90°"><i class="fas fa-redo"></i></button>
+            </div>
+        </div>
+        <div class="floating-toolbar">
+            <button onclick="window.applyFilter()" class="tool-btn group"><i class="fas fa-wand-magic-sparkles"></i><span>فلتر</span></button>
+            <button onclick="window.resetView()" class="tool-btn active"><i class="fas fa-crop-alt"></i><span>إعادة ضبط</span></button>
+        </div>
+    </div>
+    
+    <!-- MODAL FOR FULL SCREEN IMAGE VIEWING (Pinch-to-Zoom Enabled) -->
+    <div id="image-viewer-modal">
+        <span class="viewer-close" onclick="window.closeImageViewer()">&times;</span>
+        <img id="viewer-image">
+        <div class="viewer-hint">اسحب للتحريك • باعد اصبعيك للتكبير</div>
+    </div>
+
+    <script>
+        // --- GLOBAL CONFIG ---
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxp_GUP-5YMOVMxQKjTVL65CYPKqLB3r6b3f_wAAGRXvJUiSsmUoVKF3AfTco95bdp6Jg/exec"; 
+        
+        const uploadIDs = [
+            'upload-sash-right', 'upload-sash-left', 'upload-sash-back-1', 'upload-sash-back-2', 'upload-sash-side-1', 
+            'upload-sash-notes', 'upload-cap-top', 'upload-cap-rim', 'upload-cap-notes', 'upload-gown-notes', 'upload-gown-embroidery',
+            'upload-sash-american-1', 'upload-sash-american-2'
+        ];
+        
+        // --- بيانات التعليمات ---
+        const imageDataBase = {
+             'عادي': ['/images/1.1 .jpg', '/images/1.2 .jpg', '/images/1.3.jpg', '/images/1.4.jpg', '/images/1.5 .jpg'], 
+             'مثلث': ['/images/2.1.jpg', '/images/2.2.jpg', '/images/2.3.jpg', '/images/2.4.jpg', '/images/2.5 .jpg'],
+             'ملكي فرعوني': ['/images/4.1.jpg', '/images/4.2.jpg', '/images/4.3.jpg', '/images/4.4.jpg', '/images/4.5.jpg'],
+             'ملكي مثلث': ['/images/3.1.jpg', '/images/3.2.jpg', '/images/3.3.jpg', '/images/3.4.jpg', '/images/3.5.jpg', '/images/3.6.jpg'],
+             'ملكي مقوس': ['/images/دائري1.jpg', '/images/دائري2.jpg', '/images/دائري3.jpg'],
+             'جانبي': ['/images/5.1.jpg', '/images/5.2.jpg', '/images/5.3.jpg', '/images/5.4.jpg', '/images/5.5.jpg'],
+             'امريكي': ['/images/6.1.jpg', '/images/6.2.jpg', '/images/6.3.jpg', '/images/6.4.jpg', '/images/6.5.jpg'],
+             'نهاية مثلثة': ['/images/7.1.jpg'],
+             'نهاية مائلة': ['/images/7.2.jpg'],
+             'لون الوشاح': ['/images/1.3.1.jpg'],
+             'لون تطريز الوشاح': ['/images/1.3.2.1.jpg', '/images/1.3.2.2.jpg'],
+             'لون الكركوشة': ['/images/1.3.3.1.jpg', '/images/1.3.3.2.jpg'],
+             'قبعة عادية': ['/images/2.1.1.1.jpg', '/images/2.1.1.2.jpg'],
+             'قبعة ملكية': ['/images/2.1.2.1.jpg', '/images/2.1.2.2.jpg'],
+             'فوق القبعة': ['/images/2.2.1.jpg'],
+             'طوق القبعة': ['/images/2.2.2.jpg'],
+             'دبل تطريز': ['/images/2.2.3.jpg'],
+             'لا اريد تطريز': ['/images/2.2.4.jpg'],
+             'لون القبعة': ['/images/2.3.1.1.jpg', '/images/2.3.1.2.jpg'],
+             'لون تطريز القبعة': ['/images/2.3.2.1.jpg', '/images/2.3.2.2.jpg'], 
+             'لون كركوشة القبعة': ['/images/2.3.3.1.jpg', '/images/2.3.3.2.jpg'],
+             'روب خليجي': ['/images/3.1.1.1.jpg', '/images/3.1.1.2.jpg'],
+             'روب امريكي': ['/images/3.1.2.1.jpg', '/images/3.1.2.2.jpg', '/images/3.1.2.3.jpg', '/images/3.1.2.4.jpg'],
+             'كسرات كتف': ['/images/3.1.2.5.jpg'],
+             'كسرات الصدر': ['/images/3.1.2.6.jpg'],
+             'كسرات الظهر': ['/images/3.1.2.7.jpg'],
+             'تطريز الردان': ['/images/3.2.1.1.jpg', '/images/3.2.1.2.jpg'],
+             'تطعيم الردان': ['/images/3.2.1.3.jpg'],
+             'لون الروب': ['/images/3.3.1.jpg', '/images/3.3.2.jpg'],
+             'شرح_تطريز': ['/images/امام.jpg', '/images/خلف.jpg'],
+             'امريكي_ملاحظات': ['/images/امريكي1.jpg', '/images/امريكي2.jpg', '/images/امريكي3.jpg', '/images/امريكي4.jpg']
+        };
+
+        const uploadWarningText = `<br><br><span class="text-red-500 font-bold">هام!</span><br>يُفضَّل رفع صورة توضيحية مع النص، وذلك لضمان تنفيذ التصميم بالشكل المطلوب من ناحية التصميم و نوع خط الكتابة المراد تطريزها أو أي تفاصيل أخرى، حتى تكون النتيجة النهائية مطابقة لرغبتكم قدر الإمكان.`;
+        const viewBelowPhrase = `<br><br>كما في الصور التوضيحية ادناه`;
+
+        const instructionGroups = {
+            'sash-type-group': [
+                { title: 'الوشاح العادي', desc: 'يضم هذا النوع الوشاح بالتصميم التقليدي البسيط، وهو خيار أنيق وجميل جداً يجمع بين الأصالة والتميز.' + viewBelowPhrase, images: imageDataBase['عادي'] },
+                { title: 'الوشاح المثلث', desc: 'يتميز هذا الوشاح بقصته المثلثة من الخلف والأمام.' + viewBelowPhrase, images: imageDataBase['مثلث'] },
+                { title: 'الوشاح الملكي الفرعوني', desc: 'تصميم فخم ومستوحى من الطراز الفرعوني.' + viewBelowPhrase, images: imageDataBase['ملكي فرعوني'] },
+                { title: 'الوشاح الملكي المثلث', desc: 'يجمع بين الفخامة الملكية والقصة المثلثة.' + viewBelowPhrase, images: imageDataBase['ملكي مثلث'] },
+                { title: 'الوشاح الملكي المقوس', desc: 'تصميم ملكي فخم بقصة مقوسة مميزة من الخلف.' + viewBelowPhrase, images: imageDataBase['ملكي مقوس'] },
+                { title: 'الوشاح الجانبي', desc: 'يوضع على جانب واحد من الكتف بتصميم عصري.' + viewBelowPhrase, images: imageDataBase['جانبي'] },
+                { 
+                    title: 'الوشاح الأمريكي', 
+                    desc: 'النمط الأمريكي الشهير في أوشحة التخرج.<br><br><span class="text-red-500 font-bold">هام!</span><br>الوشاح الامريكي يُصنف هذا الوشاح كـ قطعة تكميلية (إكسسوار) وليس وشاحاً أساسياً للكتابة؛ حيث يتم اختياره عادةً كخيار ثانٍ ليتم ارتداؤه وتنسيقه مع الأوشحة الأخرى (العادي او انواع الملكي أو الجانبي...) وهو غير مخصص للتطريز، حيث يكتفى بألوانه وتصميمه الهندسي لإضافة لمسة جمالية للزي' + viewBelowPhrase, 
+                    images: imageDataBase['امريكي'] 
+                }
+            ],
+            'sash-ends-group': [
+                { title: 'نهاية مثلثة', desc: 'تكون نهاية الوشاح على شكل مثلث حاد.' + viewBelowPhrase, images: imageDataBase['نهاية مثلثة'] },
+                { title: 'نهاية مائلة', desc: 'تكون نهاية الوشاح بقصة مائلة انسيابية.' + viewBelowPhrase, images: imageDataBase['نهاية مائلة'] }
+            ],
+            'sash-embroidery-group': [
+                { 
+                    title: 'التطريز على الوشاح', 
+                    desc: 'يمكنكم اختيار مكان التطريز بناءً على نوع الوشاح المختار.' + uploadWarningText, 
+                    images: [],
+                    subItems: [
+                        { title: 'التطريز من الامام', desc: 'ويقصد به التطريز من الامام.<br>ففي حال الوشاح الاعتيادي (ذو الجهتين اليمنى واليسرى) تُخصص الجهة اليمنى عادةً لكتابة اسم الخريج، والجهة اليسرى اسم الكلية والقسم وسنة الدفعة مع الشعارات.<br>اما في حال الوشاح الجانبي غالباً ما يكتب الاسم والتخصص والسنة.' + viewBelowPhrase, images: ['/images/امام.jpg'] },
+                        { title: 'التطريز من الخلف', desc: 'اي التطريز في الظهر في حال كان نوع الوشاح نوع من انواع الملكي.' + viewBelowPhrase, images: ['/images/خلف.jpg'] }
+                    ]
+                } 
+            ],
+            'sash-colors-group': [
+                { title: 'لون الوشاح', desc: 'اختر اللون الأساسي لقماش الوشاح.' + viewBelowPhrase, images: imageDataBase['لون الوشاح'] },
+                { title: 'لون الكركوشة', desc: 'اختر لون الخيوط المتدلية (الكركوشة).' + viewBelowPhrase, images: imageDataBase['لون الكركوشة'] },
+                { title: 'لون التطريز', desc: 'اختر لون خيوط التطريز المستخدمة.' + viewBelowPhrase, images: imageDataBase['لون تطريز الوشاح'] }
+            ],
+            'sash-notes-group': [
+                { title: 'ملاحظات إضافية – الوشاح', desc: 'في هذا القسم يمكنك إضافة أي تفاصيل خاصة ترغب بها حول الوشاح، سواء كانت متعلقة بنوع الوشاح، أو تصميمه، أو لون <strong>التطريز</strong>، أو لون الكركوشة، أو أي مواصفات أخرى تريد تنفيذها بدقة في ما يخص الوشاح.<br>كما يمكنك كتابة ملاحظة نصية أو إرفاق صورة توضيحية تساعد في إيصال فكرتك للحصول على نتيجة مطابقة لرغبتك.' + uploadWarningText, images: [] }
+            ],
+            'sash-american-notes-group': [
+                { title: 'ملاحظات حول الوشاح الامريكي (إجباري)', desc: 'في هذا القسم اذكر أي تفاصيل خاصة ترغب بها  مثلا عدد طبقات والوان طبقات الوشاح الامريكي او شكل الوشاح والخ...' + uploadWarningText + viewBelowPhrase, images: imageDataBase['امريكي_ملاحظات'] }
+            ],
+            'cap-type-group': [
+                { title: 'قبعة عادية (دائرية)', desc: 'القبعة الكلاسيكية ذات التصميم الدائري.' + viewBelowPhrase, images: imageDataBase['قبعة عادية'] },
+                { title: 'قبعة ملكية (مثلث)', desc: 'قبعة بتصميم خاص ومميز (مثلث).' + viewBelowPhrase, images: imageDataBase['قبعة ملكية'] }
+            ],
+            'cap-embroidery-group': [
+                { title: 'فوق القبعة', desc: 'التطريز يقع في الجزء العلوي المسطح من القبعة.' + uploadWarningText + viewBelowPhrase, images: imageDataBase['فوق القبعة'] },
+                { title: 'طوق القبعة', desc: 'التطريز يحيط بالطوق الدائري للقبعة.' + uploadWarningText + viewBelowPhrase, images: imageDataBase['طوق القبعة'] },
+                { title: 'دبل تطريز', desc: 'تطريز مزدوج في الأعلى وعلى الطوق.' + viewBelowPhrase, images: imageDataBase['دبل تطريز'] },
+                { title: 'بدون تطريز', desc: 'قبعة سادة خالية من أي تطريز.' + viewBelowPhrase, images: imageDataBase['لا اريد تطريز'] }
+            ],
+            'cap-colors-group': [
+                { title: 'لون القبعة', desc: 'اللون الأساسي للقبعة.' + viewBelowPhrase, images: imageDataBase['لون القبعة'] },
+                { title: 'لون التطريز', desc: 'لون التطريز المختار للقبعة.' + viewBelowPhrase, images: imageDataBase['لون تطريز القبعة'] },
+                { title: 'لون الكركوشة', desc: 'لون الخيط المتدلي من القبعة.' + viewBelowPhrase, images: imageDataBase['لون كركوشة القبعة'] }
+            ],
+            'cap-notes-group': [
+                { title: 'ملاحظات إضافية – القبعة', desc: 'في هذا القسم يمكنك إضافة أي تفاصيل خاصة ترغب بها حول القبعة، سواء كانت متعلقة بنوع القبعة، أو تصميمها، او مكان <strong>التطريز</strong> أو لون <strong>التطريز</strong>، أو لون الكركوشة، أو أي مواصفات أخرى تريد تنفيذها بدقة في ما يخص القبعة.<br>كما يمكنك كتابة ملاحظة نصية أو إرفاق صورة توضيحية تساعد في إيصال فكرتك للحصول على نتيجة مطابقة لرغبتك.' + uploadWarningText, images: [] }
+            ],
+            'gown-type-group': [
+                { title: 'روب خليجي', desc: 'يتميز هذا النوع بتصميم ناعم وأنيق وروب عدل خالي من أي كسرات في الفصال' + viewBelowPhrase, images: imageDataBase['روب خليجي'] },
+                { 
+                    title: 'روب امريكي', 
+                    desc: 'يتميز روب التخرج الأمريكي بوجود كسرات أنيقة في منطقة الصدر والظهر والكتفين تضيف له لمسة فخامة وحركة انسيابية الردن عريض أكثر من المعتاد، مما يعزز من الطابع الفاخر للتصميم يُعد هذا الفصال مناسبا للجنسين، لكنه يبرز بشكل خاص على الطالبات لما يضفيه من نعومة وأناقة على الإطلالة العامة، كما هو موضح في الصور' + viewBelowPhrase, 
+                    images: imageDataBase['روب امريكي'],
+                    subItems: [
+                        { title: 'كسرات الصدر', desc: 'إضافة كسرات طولية في منطقة الصدر للروب الأمريكي.' + viewBelowPhrase, images: imageDataBase['كسرات الصدر'] },
+                        { title: 'كسرات الظهر', desc: 'إضافة كسرات في منطقة الظهر للروب الأمريكي.' + viewBelowPhrase, images: imageDataBase['كسرات الظهر'] },
+                        { title: 'كسرات الكتف', desc: 'إضافة كسرات مميزة عند منطقة الكتف للروب الأمريكي.' + viewBelowPhrase, images: imageDataBase['كسرات كتف'] }
+                    ]
+                }
+            ],
+            'gown-additions-group': [
+                { title: 'تطريز الردان', desc: 'إضافة تطريزات على أكمام الروب.' + uploadWarningText + viewBelowPhrase, images: imageDataBase['تطريز الردان'] },
+                { title: 'تطعيم الردان بلون الوشاح', desc: 'إضافة قماش بلون مختلف على الأكمام.' + viewBelowPhrase, images: imageDataBase['تطعيم الردان'] }
+            ],
+            'gown-colors-group': [
+                { title: 'لون الروب', desc: 'اللون الأساسي لقماش الروب.' + viewBelowPhrase, images: imageDataBase['لون الروب'] }
+            ],
+            'gown-notes-group': [
+                { title: 'ملاحظات إضافية – الروب', desc: 'في هذا القسم يمكنك إضافة أي تفاصيل خاصة ترغب بها حول الروب، سواء كانت متعلقة بنوع الروب، أو لونه، أو تصميمه، أو الكسرات، أو أي شيء يخص الردان مثل تطعيم الردان و التطريز على الردان، أو أي مواصفات أخرى تريد تنفيذها بدقة في ما يخص الروب.<br>كما يمكنك كتابة ملاحظة نصية أو إرفاق صورة توضيحية تساعد في إيصال فكرتك للحصول على نتيجة مطابقة لرغبتك.' + uploadWarningText, images: [] }
+            ]
+        };
+
+        const imageStore = {};
+        
+        let currentEditorCropper = null;
+        let currentEditingUploadId = null;
+        let editHistory = []; 
+        let historyIndex = -1; 
+        let filterIndex = 0;
+        const filters = ['', 'grayscale(100%)', 'sepia(0.5)', 'contrast(150%) brightness(110%)'];
+        let currentBaseRotation = 0; 
+        let currentFineRotation = 0; 
+
+        let baseSashType = '';
+        let isAmericanSash = false;
+        
+        let currentViewerScale = 1;
+        let startDist = 0;
+        let startScale = 1;
+        let isPinching = false;
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let currentY = 0;
+        let translateX = 0;
+        let translateY = 0;
+        
+        let currentCollageUploadId = null;
+        let generatedCollageBlob = null;
+        
+        let collageState = {
+            images: [],
+            layoutIndex: 0,
+            isContain: true 
+        };
+
+        const collageLayouts = {
+            2: [
+                (w, h, gap) => { const hw = (w-gap)/2; return [{x:0, y:0, w:hw, h:h}, {x:hw+gap, y:0, w:hw, h:h}]; },
+                (w, h, gap) => { const hh = (h-gap)/2; return [{x:0, y:0, w:w, h:hh}, {x:0, y:hh+gap, w:w, h:hh}]; }
+            ],
+            3: [
+                (w, h, gap) => { const hw=(w-gap)/2, hh=(h-gap)/2; return [{x:0, y:0, w:hw, h:h}, {x:hw+gap, y:0, w:hw, h:hh}, {x:hw+gap, y:hh+gap, w:hw, h:hh}]; },
+                (w, h, gap) => { const hh=(h-gap)/2, hw=(w-gap)/2; return [{x:0, y:0, w:w, h:hh}, {x:0, y:hh+gap, w:hw, h:hh}, {x:hw+gap, y:hh+gap, w:hw, h:hh}]; },
+                (w, h, gap) => { const tw=(w-2*gap)/3; return [{x:0, y:0, w:tw, h:h}, {x:tw+gap, y:0, w:tw, h:h}, {x:2*(tw+gap), y:0, w:tw, h:h}]; }
+            ],
+            4: [
+                (w, h, gap) => { const hw=(w-gap)/2, hh=(h-gap)/2; return [{x:0, y:0, w:hw, h:hh}, {x:hw+gap, y:0, w:hw, h:hh}, {x:0, y:hh+gap, w:hw, h:hh}, {x:hw+gap, y:hh+gap, w:hw, h:hh}]; },
+                (w, h, gap) => { const qw=(w-3*gap)/4; return [{x:0, y:0, w:qw, h:h}, {x:qw+gap, y:0, w:qw, h:h}, {x:2*(qw+gap), y:0, w:qw, h:h}, {x:3*(qw+gap), y:0, w:qw, h:h}]; },
+                (w, h, gap) => { const th=h*0.55, bh=h-th-gap, tw=(w-2*gap)/3; return [{x:0, y:0, w:w, h:th}, {x:0, y:th+gap, w:tw, h:bh}, {x:tw+gap, y:th+gap, w:tw, h:bh}, {x:2*(tw+gap), y:th+gap, w:tw, h:bh}]; }
+            ]
+        };
+
+        // --- Drawing Tool Variables ---
+        let isDrawMode = false;
+        let drawCanvas, drawCtx;
+        let isDrawing = false;
+        let drawStartX, drawStartY;
+        let drawSnapshot;
+        let drawHistory = [];
+        let drawHistoryIndex = -1;
+        
+        let currentDrawTool = 'pencil'; // pencil, line, rect, circle, arrow, eraser
+        let currentDrawColor = '#ef4444';
+        let currentDrawSize = 5;
+
+        // --- دالة الفتح السريع ---
+        window.openPreloadedInstruction = function(groupKey, mainTitle) {
+            const modal = document.getElementById('custom-instruction-modal');
+            const titleEl = document.getElementById('modal-title');
+            
+            titleEl.textContent = mainTitle;
+            document.querySelectorAll('.instruction-group-container').forEach(el => { el.style.display = 'none'; });
+            const targetGroup = document.getElementById(`group-${groupKey}`);
+            if(targetGroup) { targetGroup.style.display = 'block'; }
+            modal.style.display = 'flex';
+            document.querySelector('.instruction-body').scrollTop = 0;
+        };
+
+        window.closeInstructionPopup = function() { document.getElementById('custom-instruction-modal').style.display = 'none'; }
+        
+        // --- دوال عرض الصور ---
+        window.openImageViewer = function(src) {
+            const modal = document.getElementById('image-viewer-modal');
+            const img = document.getElementById('viewer-image');
+            img.src = src;
+            modal.style.display = 'flex';
+            currentViewerScale = 1; translateX = 0; translateY = 0; updateTransform();
+            const meta = document.querySelector('#viewport-meta');
+            meta.setAttribute('content', 'width=1280, user-scalable=no');
+        };
+
+        window.closeImageViewer = function() {
+            document.getElementById('image-viewer-modal').style.display = 'none';
+            const meta = document.querySelector('#viewport-meta');
+            meta.setAttribute('content', 'width=1280, user-scalable=yes');
+        };
+
+        // --- التحميل المسبق ---
+        function preloadImagesSmartly() {
+            let allImages = [];
+            Object.values(imageDataBase).forEach(arr => {
+                if(Array.isArray(arr)) allImages = [...allImages, ...arr];
+            });
+
+            let loadedCount = 0;
+            const total = allImages.length;
+            
+            function loadNext() {
+                if (loadedCount >= total) return;
+                const img = new Image();
+                img.onload = function() { loadedCount++; loadNext(); };
+                img.onerror = function() { loadedCount++; loadNext(); };
+                img.src = allImages[loadedCount];
+            }
+
+            loadNext(); 
+            loadNext();
+            loadNext();
+        }
+
+        // --- تهيئة التعليمات ---
+        function initAllInstructions() {
+            const contentArea = document.getElementById('instruction-content-area');
+            if(!contentArea) return;
+            
+            Object.keys(instructionGroups).forEach(groupKey => {
+                const items = instructionGroups[groupKey];
+                const groupContainer = document.createElement('div');
+                groupContainer.id = `group-${groupKey}`; 
+                groupContainer.className = 'instruction-group-container'; 
+                groupContainer.style.display = 'none';
+
+                if (items.length === 0) {
+                    groupContainer.innerHTML = `<p class="text-3xl text-gray-500 text-center mt-10">لا توجد تفاصيل إضافية لعرضها في هذا القسم.</p>`;
+                } else {
+                    items.forEach(item => {
+                        const itemContainer = document.createElement('div');
+                        itemContainer.className = 'instruction-group-item';
+
+                        const itemTitle = document.createElement('h4');
+                        itemTitle.className = 'group-item-title';
+                        itemTitle.innerHTML = `<i class="fas fa-bookmark ml-4 text-blue-400"></i> ${item.title}`;
+                        itemContainer.appendChild(itemTitle);
+
+                        const itemDesc = document.createElement('p');
+                        itemDesc.className = 'group-item-desc';
+                        itemDesc.innerHTML = item.desc;
+                        itemContainer.appendChild(itemDesc);
+
+                        if (item.images && item.images.length > 0) {
+                            const galleryContainer = document.createElement('div');
+                            galleryContainer.className = 'item-gallery-container';
+                            item.images.forEach(imgSrc => {
+                                const imgWrapper = document.createElement('div');
+                                imgWrapper.className = 'gallery-img-wrapper';
+                                imgWrapper.innerHTML = `<img src="${imgSrc}" alt="${item.title}" loading="eager" style="cursor: zoom-in;" onclick="window.openImageViewer(this.src)">`; 
+                                galleryContainer.appendChild(imgWrapper);
+                            });
+                            itemContainer.appendChild(galleryContainer);
+                        }
+
+                        if (item.subItems && item.subItems.length > 0) {
+                            const subContainer = document.createElement('div');
+                            subContainer.className = 'sub-item-container'; 
+                            item.subItems.forEach(sub => {
+                                const subTitle = document.createElement('h5');
+                                subTitle.className = 'sub-item-title';
+                                subTitle.innerHTML = `<i class="fas fa-caret-left text-emerald-500"></i> ${sub.title}`;
+                                subContainer.appendChild(subTitle);
+
+                                const subDesc = document.createElement('p');
+                                subDesc.className = 'sub-item-desc';
+                                subDesc.innerHTML = sub.desc; 
+                                subContainer.appendChild(subDesc);
+
+                                if (sub.images && sub.images.length > 0) {
+                                    const subGallery = document.createElement('div');
+                                    subGallery.className = 'item-gallery-container';
+                                    subGallery.style.marginBottom = '3rem'; 
+                                    sub.images.forEach(imgSrc => {
+                                        const imgWrapper = document.createElement('div');
+                                        imgWrapper.className = 'gallery-img-wrapper';
+                                        imgWrapper.innerHTML = `<img src="${imgSrc}" alt="${sub.title}" loading="eager" style="cursor: zoom-in;" onclick="window.openImageViewer(this.src)">`; 
+                                        subGallery.appendChild(imgWrapper);
+                                    });
+                                    subContainer.appendChild(subGallery);
+                                }
+                            });
+                            itemContainer.appendChild(subContainer);
+                        }
+                        groupContainer.appendChild(itemContainer);
+                    });
+                }
+                contentArea.appendChild(groupContainer);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initUploadBoxes();
+            updateProgress();
+            initAllInstructions();
+            setTimeout(preloadImagesSmartly, 1000);
+            
+            document.querySelectorAll('.custom-input, textarea').forEach(el => {
+                el.addEventListener('blur', (e) => {
+                    if (window.triggerFieldAnalysis) {
+                        window.triggerFieldAnalysis(e.target);
+                    }
+                });
+            });
+
+            // Init Drawing Canvas
+            initDrawingCanvas();
+        });
+
+        // --- Drawing Tool Logic ---
+        function initDrawingCanvas() {
+            drawCanvas = document.getElementById('drawing-canvas');
+            if(!drawCanvas) return;
+            drawCtx = drawCanvas.getContext('2d');
+            
+            // Resize canvas to full document size
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Mouse/Touch Events
+            drawCanvas.addEventListener('mousedown', startDrawing);
+            drawCanvas.addEventListener('mousemove', draw);
+            drawCanvas.addEventListener('mouseup', stopDrawing);
+            drawCanvas.addEventListener('mouseout', stopDrawing);
+            
+            drawCanvas.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent("mousedown", {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                drawCanvas.dispatchEvent(mouseEvent);
+            }, false);
+            
+            drawCanvas.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent("mousemove", {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                drawCanvas.dispatchEvent(mouseEvent);
+            }, false);
+
+            drawCanvas.addEventListener('touchend', (e) => {
+                const mouseEvent = new MouseEvent("mouseup", {});
+                drawCanvas.dispatchEvent(mouseEvent);
+            }, false);
+        }
+
+        function resizeCanvas() {
+            if(drawCanvas) {
+                // Ensure canvas covers the full scrollable height
+                const docHeight = Math.max(
+                    document.body.scrollHeight, document.body.offsetHeight, 
+                    document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight
+                );
+                drawCanvas.width = document.documentElement.clientWidth;
+                drawCanvas.height = docHeight;
+                
+                // Redraw history if any (simple implementation: clear and restore last state if preserved in memory, but canvas resize clears it)
+                if (drawHistoryIndex >= 0) {
+                    const img = new Image();
+                    img.onload = () => drawCtx.drawImage(img, 0, 0);
+                    img.src = drawHistory[drawHistoryIndex];
+                }
+            }
+        }
+
+        window.toggleDrawingMode = function() {
+            isDrawMode = !isDrawMode;
+            const fab = document.getElementById('btn-toggle-drawing');
+            const toolbar = document.getElementById('drawing-toolbar');
+            const canvas = document.getElementById('drawing-canvas');
+            const icon = document.getElementById('btn-toggle-icon');
+
+            if (isDrawMode) {
+                fab.classList.add('active');
+                icon.className = "fas fa-check"; // Checkmark to finish
+                toolbar.classList.remove('hidden');
+                canvas.classList.add('active');
+                // Ensure canvas is sized correctly before starting
+                resizeCanvas();
+            } else {
+                fab.classList.remove('active');
+                icon.className = "fas fa-paint-brush";
+                toolbar.classList.add('hidden');
+                canvas.classList.remove('active');
+            }
+        };
+
+        window.setDrawTool = function(tool) {
+            currentDrawTool = tool;
+            document.querySelectorAll('.dt-btn').forEach(b => b.classList.remove('active'));
+            const buttons = document.querySelectorAll('.dt-btn');
+            // Mapping based on index
+            if(tool === 'pencil') buttons[0].classList.add('active');
+            if(tool === 'line') buttons[1].classList.add('active');
+            if(tool === 'arrow') buttons[2].classList.add('active');
+            if(tool === 'rect') buttons[3].classList.add('active');
+            if(tool === 'circle') buttons[4].classList.add('active');
+            if(tool === 'eraser') buttons[5].classList.add('active');
+        };
+
+        window.setDrawColor = function(color, el) {
+            currentDrawColor = color;
+            document.querySelectorAll('.dt-color').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        };
+
+        window.setDrawSize = function(size) {
+            currentDrawSize = size;
+        };
+
+        window.drawClear = function() {
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            saveDrawState();
+        };
+
+        window.drawUndo = function() {
+            if (drawHistoryIndex > 0) {
+                drawHistoryIndex--;
+                const img = new Image();
+                img.onload = () => {
+                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                    drawCtx.drawImage(img, 0, 0);
+                };
+                img.src = drawHistory[drawHistoryIndex];
+            } else {
+                drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                drawHistoryIndex = -1;
+            }
+        };
+
+        window.drawRedo = function() {
+            if (drawHistoryIndex < drawHistory.length - 1) {
+                drawHistoryIndex++;
+                const img = new Image();
+                img.onload = () => {
+                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                    drawCtx.drawImage(img, 0, 0);
+                };
+                img.src = drawHistory[drawHistoryIndex];
+            }
+        };
+
+        function saveDrawState() {
+            drawHistoryIndex++;
+            if (drawHistoryIndex < drawHistory.length) {
+                drawHistory.length = drawHistoryIndex; // Remove future history if we drew something new
+            }
+            drawHistory.push(drawCanvas.toDataURL());
+        }
+
+        function startDrawing(e) {
+            if (!isDrawMode) return;
+            isDrawing = true;
+            // Get coordinates relative to canvas
+            const rect = drawCanvas.getBoundingClientRect();
+            drawStartX = e.clientX - rect.left; // x position within the element.
+            drawStartY = e.clientY - rect.top;  // y position within the element.
+            
+            // For shapes, save snapshot to restore while dragging
+            if (currentDrawTool !== 'pencil' && currentDrawTool !== 'eraser') {
+                drawSnapshot = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
+            }
+            
+            drawCtx.beginPath();
+            drawCtx.lineWidth = currentDrawSize;
+            drawCtx.lineCap = 'round';
+            drawCtx.lineJoin = 'round';
+            drawCtx.strokeStyle = currentDrawTool === 'eraser' ? 'rgba(0,0,0,1)' : currentDrawColor; // Eraser uses destination-out
+            
+            if (currentDrawTool === 'eraser') {
+                drawCtx.globalCompositeOperation = 'destination-out';
+            } else {
+                drawCtx.globalCompositeOperation = 'source-over';
+            }
+
+            // Move to start
+            drawCtx.moveTo(drawStartX, drawStartY);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = drawCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (currentDrawTool === 'pencil' || currentDrawTool === 'eraser') {
+                drawCtx.lineTo(x, y);
+                drawCtx.stroke();
+            } else {
+                // Restore snapshot for shapes (to avoid trail)
+                drawCtx.putImageData(drawSnapshot, 0, 0);
+                drawCtx.beginPath();
+                drawCtx.moveTo(drawStartX, drawStartY);
+                
+                if (currentDrawTool === 'line') {
+                    drawCtx.lineTo(x, y);
+                    drawCtx.stroke();
+                } else if (currentDrawTool === 'rect') {
+                    drawCtx.rect(drawStartX, drawStartY, x - drawStartX, y - drawStartY);
+                    drawCtx.stroke();
+                } else if (currentDrawTool === 'circle') {
+                    const radius = Math.sqrt(Math.pow(x - drawStartX, 2) + Math.pow(y - drawStartY, 2));
+                    drawCtx.arc(drawStartX, drawStartY, radius, 0, 2 * Math.PI);
+                    drawCtx.stroke();
+                } else if (currentDrawTool === 'arrow') {
+                    drawArrow(drawCtx, drawStartX, drawStartY, x, y);
+                }
+            }
+        }
+
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = currentDrawSize * 3; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            
+            // Draw head
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            drawCtx.closePath();
+            saveDrawState();
+        }
+
+        // --- Touch Logic (Pinch & Pan) ---
+        const viewerImage = document.getElementById('viewer-image');
+        const viewerModal = document.getElementById('image-viewer-modal');
+        let lastTap = 0;
+
+        function getDistance(touches) { return Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY); }
+        function updateTransform() { viewerImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentViewerScale})`; }
+
+        if(viewerModal) {
+            viewerModal.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) { e.preventDefault(); isPinching = true; startDist = getDistance(e.touches); startScale = currentViewerScale; } 
+                else if (e.touches.length === 1) {
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTap;
+                    if (tapLength < 300 && tapLength > 0) { e.preventDefault(); if(currentViewerScale > 1) { currentViewerScale = 1; translateX = 0; translateY = 0; } else { currentViewerScale = 3; } updateTransform(); }
+                    lastTap = currentTime;
+                    if (currentViewerScale > 1) { isDragging = true; startX = e.touches[0].pageX - translateX; startY = e.touches[0].pageY - translateY; }
+                }
+            }, { passive: false });
+
+            viewerModal.addEventListener('touchmove', (e) => {
+                if (isPinching && e.touches.length === 2) { e.preventDefault(); const dist = getDistance(e.touches); let newScale = startScale * (dist / startDist); newScale = Math.max(1, Math.min(newScale, 5)); currentViewerScale = newScale; updateTransform(); } 
+                else if (isDragging && e.touches.length === 1 && currentViewerScale > 1) { e.preventDefault(); translateX = e.touches[0].pageX - startX; translateY = e.touches[0].pageY - startY; updateTransform(); }
+            }, { passive: false });
+
+            viewerModal.addEventListener('touchend', (e) => { isPinching = false; isDragging = false; if (currentViewerScale <= 1.1) { currentViewerScale = 1; translateX = 0; translateY = 0; updateTransform(); } });
+            viewerModal.addEventListener('click', function(e) { if (e.target === this && !isDragging && !isPinching) { window.closeImageViewer(); } });
+        }
+
+        // --- WINDOW BINDING ---
+        window.selectOption = selectOption;
+        window.handleSashChange = handleSashChange;
+        window.handleCapTypeChange = handleCapTypeChange;
+        window.handleGownChange = handleGownChange;
+        window.handleCapEmbroideryChange = handleCapEmbroideryChange;
+        window.handleGownEmbroideryChange = handleGownEmbroideryChange;
+        window.toggleCheckboxStyle = toggleCheckboxStyle;
+        window.selectSashBase = selectSashBase;
+        window.toggleAmericanCard = toggleAmericanCard;
+        window.selectNoSash = selectNoSash;
+        window.handleNameInput = handleNameInput;
+        window.cleanNameInput = cleanNameInput;
+        window.processFileForEditor = processFileForEditor;
+        window.reEditImage = reEditImage;
+        window.removeImage = removeImage;
+        window.closeEditor = closeEditor;
+        window.saveEditorImage = saveEditorImage;
+        window.saveIntermediateChanges = saveIntermediateChanges;
+        window.undoEdit = undoEdit;
+        window.redoEdit = redoEdit;
+        window.applyFilter = applyFilter;
+        window.handleRotation = handleRotation;
+        window.rotate90 = rotate90;
+        window.resetView = resetView;
+        window.initiateSendProcess = initiateSendProcess;
+        window.compensateVisualZoom = compensateVisualZoom;
+        window.validateForm = validateForm; 
+        window.openCollageMaker = openCollageMaker;
+        window.closeCollageMaker = closeCollageMaker;
+        window.handleCollageFiles = handleCollageFiles;
+        window.saveCollage = saveCollage;
+        window.shuffleCollage = shuffleCollage;
+        window.changeCollageLayout = changeCollageLayout;
+        window.toggleCollageFit = toggleCollageFit;
+        window.toggleDrawingMode = window.toggleDrawingMode;
+        window.setDrawTool = window.setDrawTool;
+        window.setDrawColor = window.setDrawColor;
+        window.setDrawSize = window.setDrawSize;
+        window.drawClear = window.drawClear;
+        window.drawUndo = window.drawUndo;
+        window.drawRedo = window.drawRedo;
+
+        // --- Existing functions from previous context ---
+        // I'll add the essential ones back to ensure no breakage
+        
+        function selectOption(inputId, value, element, theme) {
+            const input = document.getElementById(inputId);
+            if(!input) return;
+            input.value = value;
+            const parent = element.parentElement;
+            parent.querySelectorAll('.option-card').forEach(c => {
+                c.classList.remove('active-purple', 'active-indigo', 'active-emerald', 'active-gray');
+            });
+            element.classList.add(`active-${theme}`);
+            if (inputId === 'capType') handleCapTypeChange();
+            else if (inputId === 'gownType') handleGownChange();
+            else if (inputId === 'capEmbroideryLoc') handleCapEmbroideryChange();
+            updateProgress();
+        }
+
+        function selectSashBase(value, element) {
+            baseSashType = value;
+            document.querySelectorAll('.sash-base-card').forEach(c => {
+                c.classList.remove('active-purple', 'active-gray');
+            });
+            element.classList.add('active-purple');
+            updateFinalSashValue();
+        }
+
+        function selectNoSash(element) {
+            baseSashType = 'لا اريد وشاح';
+            isAmericanSash = false; 
+            document.querySelectorAll('.sash-base-card').forEach(c => {
+                c.classList.remove('active-purple', 'active-gray');
+            });
+            element.classList.add('active-gray');
+            const amCard = document.getElementById('card-american-toggle');
+            amCard.classList.remove('active-purple');
+            amCard.style.opacity = '0.5';
+            amCard.style.pointerEvents = 'none';
+            updateFinalSashValue();
+        }
+
+        function toggleAmericanCard(element) {
+            if(baseSashType === 'لا اريد وشاح') return;
+            isAmericanSash = !isAmericanSash;
+            if (isAmericanSash) element.classList.add('active-purple');
+            else element.classList.remove('active-purple');
+            updateFinalSashValue();
+        }
+        
+        function toggleCheckboxStyle(checkbox, theme = 'emerald') {
+            const label = checkbox.parentElement;
+            const activeClass = `checkbox-wrapper-active`; 
+            if (checkbox.checked) label.classList.add(activeClass);
+            else label.classList.remove(activeClass);
+        }
+
+        function cleanNameInput(inputElement) {
+            let val = inputElement.value;
+            if (!val) return;
+            val = val.replace(/[^\u0621-\u064A\s]/g, '');
+            val = val.replace(/\s+/g, ' ').trim();
+            inputElement.value = val;
+            handleNameInput(); 
+        }
+
+        function validateNameSmart(name) {
+            name = name.trim();
+            if (name.length === 0) return { valid: false, msg: "" };
+            if (/[^ \u0621-\u064A]/.test(name)) return { valid: false, msg: "يسمح فقط بالحروف العربية (بدون أرقام أو رموز)." };
+            if (/(.)\1{2,}/.test(name)) return { valid: false, msg: "الاسم يحتوي على تكرار مبالغ فيه للحروف." };
+            const parts = name.split(' ').filter(p => p.length > 1); 
+            if (parts.length < 4) return { valid: false, msg: "يجب كتابة الاسم الرباعي كاملاً (4 مقاطع)." };
+            return { valid: true, msg: "" };
+        }
+
+        function handleNameInput() {
+            const input = document.getElementById('input-fullName');
+            const warningP = document.getElementById('name-warning-msg');
+            const warningText = document.getElementById('name-warning-text');
+            const result = validateNameSmart(input.value);
+            if (!input.value.trim()) {
+                warningP.classList.add('hidden'); 
+            } else if (!result.valid) {
+                warningP.classList.remove('hidden');
+                warningText.textContent = result.msg;
+                input.classList.add('border-red-400');
+                input.classList.remove('border-gray-300', 'border-green-500');
+            } else {
+                warningP.classList.add('hidden');
+                input.classList.remove('border-red-400', 'border-gray-300');
+                input.classList.add('border-green-500'); 
+            }
+            updateProgress();
+        }
+
+        function updateFinalSashValue() {
+            const input = document.getElementById('sashType');
+            const amCard = document.getElementById('card-american-toggle');
+            if (baseSashType !== 'لا اريد وشاح' && baseSashType !== '') {
+                amCard.style.opacity = '1';
+                amCard.style.pointerEvents = 'auto';
+            }
+            const endsSpan = document.getElementById('dynamic-sash-type-ends');
+            const embSpan = document.getElementById('dynamic-sash-type-embroidery');
+            const colSpan = document.getElementById('dynamic-sash-type-colors');
+            let labelText = '';
+            if (baseSashType === 'لا اريد وشاح' || baseSashType === '') {
+                input.value = baseSashType;
+                labelText = '';
+            } else {
+                if (isAmericanSash) input.value = 'امريكي + ' + baseSashType;
+                else input.value = baseSashType;
+                labelText = `(${baseSashType})`;
+            }
+            if(endsSpan) endsSpan.textContent = labelText;
+            if(embSpan) embSpan.textContent = labelText;
+            if(colSpan) colSpan.textContent = labelText;
+            handleSashChange();
+            updateProgress();
+        }
+
+        function handleSashChange() {
+            const val = document.getElementById('sashType').value;
+            const wrapper = document.getElementById('sashContentWrapper');
+            const americanNotes = document.getElementById('sashSectionAmericanNotes');
+            if (!val || val.includes('لا اريد')) { 
+                wrapper.classList.add('hidden'); 
+                americanNotes.classList.add('hidden');
+            } else {
+                wrapper.classList.remove('hidden');
+                document.getElementById('sashSectionTwoSides').classList.toggle('hidden', val.includes('جانبي'));
+                document.getElementById('sashSectionOneSide').classList.toggle('hidden', !val.includes('جانبي'));
+                document.getElementById('sashSectionBack').classList.toggle('hidden', !val.includes('ملكي'));
+                americanNotes.classList.toggle('hidden', !val.includes('امريكي'));
+                const endsContainer = document.getElementById('sashEndsContainer');
+                if (val.includes('جانبي')) {
+                    endsContainer.classList.add('hidden');
+                    document.getElementById('sashEndsType').value = '';
+                    document.querySelectorAll('#sashEndsOptions .option-card').forEach(c => {
+                        c.classList.remove('active-purple', 'active-indigo', 'active-emerald', 'active-gray');
+                    });
+                } else {
+                    endsContainer.classList.remove('hidden');
+                }
+            }
+            updateProgress();
+        }
+
+        function handleCapTypeChange() {
+            const val = document.getElementById('capType').value;
+            const wrapper = document.getElementById('capContentWrapper');
+            val && !val.includes('لا اريد') ? wrapper.classList.remove('hidden') : wrapper.classList.add('hidden');
+            updateProgress();
+        }
+
+        function handleCapEmbroideryChange() {
+            const loc = document.getElementById('capEmbroideryLoc').value;
+            const top = document.getElementById('capSectionTop');
+            const rim = document.getElementById('capSectionRim');
+            const colorField = document.getElementById('capEmbroideryColorField');
+            top.classList.add('hidden'); rim.classList.add('hidden'); 
+            if (loc === 'لا اريد تطريز') {
+                colorField.classList.add('opacity-50', 'pointer-events-none');
+                document.getElementById('capEmbroideryColor').value = '';
+                document.getElementById('capTopContent-validation-msg').classList.add('hidden');
+                document.getElementById('capRimContent-validation-msg').classList.add('hidden');
+            } else {
+                colorField.classList.remove('opacity-50', 'pointer-events-none');
+                if (loc === 'فوق القبعة') top.classList.remove('hidden');
+                else if (loc === 'طوق القبعة') rim.classList.remove('hidden');
+                else if (loc.includes('دبل')) { top.classList.remove('hidden'); rim.classList.remove('hidden'); }
+            }
+        }
+
+        function handleGownChange() {
+            const val = document.getElementById('gownType').value;
+            const wrapper = document.getElementById('gownContentWrapper');
+            val && !val.includes('لا اريد') ? wrapper.classList.remove('hidden') : wrapper.classList.add('hidden');
+            const americanOptions = document.getElementById('americanGownOptions');
+            if (americanOptions) {
+                if (val === 'روب امريكي') americanOptions.classList.remove('hidden');
+                else americanOptions.classList.add('hidden');
+            }
+            updateProgress();
+        }
+
+        function handleGownEmbroideryChange(checkbox) {
+            const section = document.getElementById('gownEmbroideryUploadSection');
+            if(checkbox.checked) section.classList.remove('hidden');
+            else section.classList.add('hidden');
+        }
+
+        function initUploadBoxes() {
+            uploadIDs.forEach(id => {
+                const c = document.getElementById(id);
+                if(c && !c.querySelector('.upload-box')) renderEmptyBox(id);
+            });
+        }
+
+        function renderEmptyBox(id) {
+            document.getElementById(id).innerHTML = `
+                <div class="upload-box group relative">
+                    <div class="absolute inset-0 cursor-pointer" onclick="document.getElementById('file-${id}').click()"></div>
+                    <input type="file" id="file-${id}" class="hidden" accept="image/*" onchange="window.processFileForEditor(event, '${id}')">
+                    <div class="upload-placeholder z-10 pointer-events-none">
+                        <i class="fas fa-cloud-upload-alt group-hover:text-blue-500 transition mb-2"></i>
+                        <span class="block">ارفق صورة</span>
+                    </div>
+                    <button onclick="window.openCollageMaker('${id}')" class="absolute bottom-4 right-4 z-20 bg-white text-purple-600 p-3 rounded-full shadow-lg hover:bg-purple-100 transition pointer-events-auto border-2 border-purple-100 group-hover:scale-110" title="إنشاء مجمعة صور">
+                        <i class="fas fa-th-large text-2xl"></i>
+                    </button>
+                </div>`;
+        }
+
+        function renderImageBox(id, base64) {
+            document.getElementById(id).innerHTML = `
+                <div class="upload-box has-image relative">
+                    <img src="${base64}" class="uploaded-img">
+                    <div class="img-actions">
+                        <button onclick="window.reEditImage(event, '${id}')" class="action-btn btn-edit">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button onclick="window.removeImage(event, '${id}')" class="action-btn btn-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <input type="file" id="file-${id}" class="hidden" accept="image/*" onchange="window.processFileForEditor(event, '${id}')">
+                </div>`;
+        }
+
+        function processFileForEditor(event, id) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                openEditor(id, e.target.result);
+                event.target.value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function reEditImage(e, id) {
+            e.stopPropagation();
+            const currentSrc = imageStore[id];
+            if(currentSrc) openEditor(id, currentSrc);
+        }
+
+        function removeImage(e, id) { 
+            e.stopPropagation(); 
+            delete imageStore[id]; 
+            renderEmptyBox(id); 
+        }
+
+        function openEditor(id, imageSrc) {
+            currentEditingUploadId = id;
+            const modal = document.getElementById('image-editor-modal');
+            const imgTarget = document.getElementById('editor-image-target');
+            editHistory = [imageSrc];
+            historyIndex = 0;
+            updateHistoryButtons();
+            currentBaseRotation = 0;
+            currentFineRotation = 0;
+            document.querySelector('.rotation-slider').value = 0;
+            filterIndex = 0; 
+            imgTarget.src = editHistory[historyIndex];
+            imgTarget.style.filter = filters[filterIndex]; 
+            modal.style.display = 'flex';
+            lockZoom();
+            document.getElementById('btn-floating-save').classList.remove('visible');
+            initCropper(imgTarget);
+        }
+
+        function initCropper(imgElement) {
+            if(currentEditorCropper) { currentEditorCropper.destroy(); }
+            setTimeout(() => {
+                currentEditorCropper = new Cropper(imgElement, {
+                    viewMode: 1, dragMode: 'none', movable: false, zoomable: false, autoCropArea: 0.8,
+                    background: false, minContainerWidth: 800, minContainerHeight: 600,
+                    cropstart: function() { document.getElementById('btn-floating-save').classList.add('visible'); },
+                    cropmove: function() { document.getElementById('btn-floating-save').classList.add('visible'); },
+                    ready: function() { currentEditorCropper.rotateTo(currentBaseRotation + parseFloat(currentFineRotation)); }
+                });
+            }, 50);
+        }
+
+        function applyCombinedRotation() {
+            if(currentEditorCropper) {
+                let total = currentBaseRotation + parseFloat(currentFineRotation);
+                currentEditorCropper.rotateTo(total);
+                document.getElementById('btn-floating-save').classList.add('visible');
+            }
+        }
+
+        function handleRotation(value) {
+            currentFineRotation = value;
+            applyCombinedRotation();
+        }
+
+        function rotate90(degrees) {
+            currentBaseRotation += degrees;
+            applyCombinedRotation();
+        }
+
+        function applyFilter() {
+            filterIndex = (filterIndex + 1) % filters.length;
+            const f = filters[filterIndex];
+            const imgTarget = document.getElementById('editor-image-target');
+            if(imgTarget) imgTarget.style.filter = f;
+            document.getElementById('btn-floating-save').classList.add('visible');
+        }
+
+        function saveIntermediateChanges() {
+            if (!currentEditorCropper) return;
+            let canvas = currentEditorCropper.getCroppedCanvas({ fillColor: '#fff' });
+            if(filterIndex > 0) {
+                const fCanvas = document.createElement('canvas');
+                fCanvas.width = canvas.width;
+                fCanvas.height = canvas.height;
+                const ctx = fCanvas.getContext('2d');
+                ctx.filter = filters[filterIndex];
+                ctx.drawImage(canvas, 0, 0);
+                canvas = fCanvas; 
+            }
+            const newImageBase64 = canvas.toDataURL('image/jpeg');
+            addToHistory(newImageBase64);
+            loadState(newImageBase64);
+            currentBaseRotation = 0;
+            currentFineRotation = 0;
+            document.querySelector('.rotation-slider').value = 0;
+            filterIndex = 0; 
+            setTimeout(() => {
+                currentEditorCropper.destroy();
+                document.getElementById('editor-image-target').src = newImageBase64;
+                document.getElementById('editor-image-target').style.filter = '';
+                initCropper(document.getElementById('editor-image-target'));
+                document.getElementById('btn-floating-save').classList.remove('visible');
+            }, 100);
+        }
+
+        function resetView() {
+            if(currentEditorCropper) {
+                currentEditorCropper.crop();
+                currentBaseRotation = 0;
+                currentFineRotation = 0;
+                document.querySelector('.rotation-slider').value = 0;
+                currentEditorCropper.rotateTo(0);
+                filterIndex = 0; 
+                document.getElementById('editor-image-target').style.filter = '';
+                loadState(editHistory[0]); 
+                document.getElementById('btn-floating-save').classList.remove('visible');
+            }
+        }
+
+        function addToHistory(newBase64) {
+            editHistory = editHistory.slice(0, historyIndex + 1);
+            editHistory.push(newBase64);
+            historyIndex++;
+            updateHistoryButtons();
+        }
+
+        function undoEdit() {
+            if(historyIndex > 0) {
+                historyIndex--;
+                loadState(editHistory[historyIndex]);
+                currentEditorCropper.destroy();
+                document.getElementById('editor-image-target').src = editHistory[historyIndex];
+                document.getElementById('editor-image-target').style.filter = '';
+                initCropper(document.getElementById('editor-image-target'));
+                updateHistoryButtons();
+                document.getElementById('btn-floating-save').classList.add('visible');
+            }
+        }
+
+        function redoEdit() {
+            if(historyIndex < editHistory.length - 1) {
+                historyIndex++;
+                loadState(editHistory[historyIndex]);
+                currentEditorCropper.destroy();
+                document.getElementById('editor-image-target').src = editHistory[historyIndex];
+                document.getElementById('editor-image-target').style.filter = '';
+                initCropper(document.getElementById('editor-image-target'));
+                updateHistoryButtons();
+                document.getElementById('btn-floating-save').classList.add('visible');
+            }
+        }
+
+        function loadState(base64) {
+            const imgTarget = document.getElementById('editor-image-target');
+            if(imgTarget) imgTarget.src = base64; 
+        }
+
+        function updateHistoryButtons() {
+            document.getElementById('btn-undo').disabled = (historyIndex <= 0);
+            document.getElementById('btn-redo').disabled = (historyIndex >= editHistory.length - 1);
+        }
+        
+        function saveEditorImage() {
+            const base64 = editHistory[historyIndex];
+            imageStore[currentEditingUploadId] = base64; 
+            renderImageBox(currentEditingUploadId, base64);
+            closeEditor();
+        }
+        
+        function closeEditor() {
+            document.getElementById('image-editor-modal').style.display = 'none';
+            if(currentEditorCropper) { currentEditorCropper.destroy(); currentEditorCropper = null; }
+            unlockZoom();
+        }
+
+        function lockZoom() {
+            document.querySelector('#viewport-meta').setAttribute('content', 'width=1280, user-scalable=no, initial-scale=1.0, maximum-scale=1.0');
+            window.addEventListener('keydown', preventZoomKeys, { passive: false });
+            window.addEventListener('wheel', preventZoomWheel, { passive: false });
+            window.addEventListener('resize', compensateVisualZoom);
+            compensateVisualZoom(); 
+        }
+
+        function unlockZoom() {
+            const meta = document.querySelector('#viewport-meta');
+            meta.setAttribute('content', 'width=1280, user-scalable=no');
+            window.removeEventListener('keydown', preventZoomKeys);
+            window.removeEventListener('wheel', preventZoomWheel);
+            window.removeEventListener('resize', compensateVisualZoom);
+            const modal = document.getElementById('image-editor-modal');
+            if(modal) {
+                modal.style.transform = ''; modal.style.width = ''; modal.style.height = ''; modal.style.position = 'fixed';
+            }
+            setTimeout(() => { meta.setAttribute('content', 'width=1280, user-scalable=yes'); }, 100);
+        }
+
+        function compensateVisualZoom() {
+            const modal = document.getElementById('image-editor-modal');
+            if (!modal || modal.style.display === 'none') return;
+            const winWidth = window.innerWidth;
+            const winHeight = window.innerHeight;
+            const baseWidth = 1280; 
+            let scale = winWidth / baseWidth;
+            modal.style.width = baseWidth + 'px'; 
+            modal.style.height = (winHeight / scale) + 'px'; 
+            modal.style.transform = `scale(${scale})`; 
+            modal.style.transformOrigin = 'top left'; 
+            modal.style.top = '0'; modal.style.left = '0';
+        }
+
+        function preventZoomKeys(e) {
+            if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+                e.preventDefault();
+            }
+        }
+
+        function preventZoomWheel(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+            }
+        }
+
+        function updateProgress() {
+            let completedSections = 0;
+            const nameInput = document.getElementById('input-fullName');
+            const nameStatus = validateNameSmart(nameInput.value);
+            if (nameInput.value.trim().length > 0 && nameStatus.valid) completedSections++;
+
+            if (document.getElementById('sashType').value) completedSections++;
+            if (document.getElementById('capType').value) completedSections++;
+            if (document.getElementById('gownType').value) completedSections++;
+            document.getElementById('progress-bar').style.width = `${(completedSections / 4) * 100}%`;
+            document.getElementById('progress-text').innerText = completedSections === 4 ? "مكتمل" : `قيد التعبئة`;
+        }
+
+        function showLoading(show, text = "جاري المعالجة...") {
+            const overlay = document.getElementById('loading-overlay');
+            const loadingText = document.getElementById('loading-text');
+            loadingText.innerText = text;
+            overlay.style.display = show ? 'flex' : 'none';
+        }
+
+        // ==========================================
+        // --- Collage Logic ---
+        // ==========================================
+        function openCollageMaker(id) {
+            currentCollageUploadId = id;
+            document.getElementById('collage-modal').style.display = 'flex';
+            document.getElementById('collage-result-img').classList.add('hidden');
+            document.getElementById('collage-result-img').src = '';
+            document.getElementById('collage-placeholder-text').classList.remove('hidden');
+            document.getElementById('collage-toolbar').classList.add('hidden');
+            document.getElementById('btn-save-collage').disabled = true;
+            document.getElementById('btn-save-collage').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('collage-input').value = '';
+            collageState.images = [];
+            collageState.layoutIndex = 0;
+            collageState.isContain = true; 
+        }
+
+        function closeCollageMaker() {
+            document.getElementById('collage-modal').style.display = 'none';
+        }
+
+        function handleCollageFiles(files) {
+            if (!files || files.length < 2) {
+                Swal.fire('تنبيه', 'يرجى اختيار صورتين على الأقل لعمل مجمعة صور.', 'warning');
+                return;
+            }
+            if (files.length > 4) {
+                Swal.fire('تنبيه', 'يمكنك اختيار 4 صور كحد أقصى.', 'warning');
+                return;
+            }
+            showLoading(true, "جاري تحميل الصور...");
+            Promise.all(Array.from(files).map(file => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.src = URL.createObjectURL(file);
+                });
+            })).then(images => {
+                collageState.images = images;
+                collageState.layoutIndex = 0;
+                renderCollage();
+                showLoading(false);
+                document.getElementById('collage-placeholder-text').classList.add('hidden');
+                document.getElementById('collage-result-img').classList.remove('hidden');
+                document.getElementById('collage-toolbar').classList.remove('hidden');
+                document.getElementById('btn-save-collage').disabled = false;
+                document.getElementById('btn-save-collage').classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+        }
+
+        function shuffleCollage() {
+            if (collageState.images.length === 0) return;
+            for (let i = collageState.images.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [collageState.images[i], collageState.images[j]] = [collageState.images[j], collageState.images[i]];
+            }
+            renderCollage();
+        }
+
+        function changeCollageLayout() {
+            const count = collageState.images.length;
+            const layouts = collageLayouts[count];
+            if (!layouts) return;
+            collageState.layoutIndex = (collageState.layoutIndex + 1) % layouts.length;
+            renderCollage();
+        }
+
+        function toggleCollageFit() {
+            collageState.isContain = !collageState.isContain;
+            renderCollage();
+        }
+
+        function renderCollage() {
+            const images = collageState.images;
+            const count = images.length;
+            if (count < 2) return;
+            const canvas = document.createElement('canvas');
+            const size = 1200; 
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, size, size);
+            const gap = 10;
+            const layoutFn = collageLayouts[count][collageState.layoutIndex] || collageLayouts[count][0];
+            const rects = layoutFn(size, size, gap);
+            rects.forEach((rect, i) => {
+                if (images[i]) {
+                    drawImageSmart(ctx, images[i], rect.x, rect.y, rect.w, rect.h, collageState.isContain);
+                }
+            });
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            document.getElementById('collage-result-img').src = dataUrl;
+            generatedCollageBlob = dataUrl;
+        }
+
+        function drawImageSmart(ctx, img, x, y, w, h, isContain) {
+            let sx, sy, sw, sh, dx, dy, dw, dh;
+            if (isContain) {
+                const scale = Math.min(w / img.width, h / img.height);
+                dw = img.width * scale;
+                dh = img.height * scale;
+                dx = x + (w - dw) / 2;
+                dy = y + (h - dh) / 2;
+                ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
+            } else {
+                const imgAspect = img.width / img.height;
+                const areaAspect = w / h;
+                if (imgAspect > areaAspect) {
+                    sh = img.height;
+                    sw = img.height * areaAspect;
+                    sy = 0;
+                    sx = (img.width - sw) / 2;
+                } else {
+                    sw = img.width;
+                    sh = img.width / areaAspect;
+                    sx = 0;
+                    sy = (img.height - sh) / 2;
+                }
+                ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+            }
+        }
+
+        function saveCollage() {
+            if (currentCollageUploadId && generatedCollageBlob) {
+                closeCollageMaker();
+                openEditor(currentCollageUploadId, generatedCollageBlob);
+            }
+        }
+        
+        // --- Form Validation & Submission ---
+        function clearValidationMessages() {
+            document.querySelectorAll('.validation-message').forEach(el => el.classList.add('hidden'));
+        }
+
+        function failValidation(id, message) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.querySelector('span').textContent = message;
+                el.classList.remove('hidden');
+                const target = el.closest('.subsection-container') || el;
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return false;
+        }
+
+        function validateForm() {
+            clearValidationMessages();
+            const fullNameInput = document.querySelector('[name="fullName"]');
+            const nameValidation = validateNameSmart(fullNameInput.value);
+            if (!fullNameInput.value || !nameValidation.valid) return false;
+            
+            const sashType = document.getElementById('sashType').value;
+            if (!sashType || sashType.includes('لا اريد')) {
+                if (!sashType) return failValidation('sashType-validation-msg', 'مطلوب.');
+                return checkCapValidation();
+            }
+            const isSashEndsRequired = !sashType.includes('جانبي');
+            if (isSashEndsRequired) {
+                const sashEndsType = document.getElementById('sashEndsType').value;
+                if (!sashEndsType) return failValidation('sashEndsType-validation-msg', 'مطلوب.');
+            }
+            const isTwoSides = !sashType.includes('جانبي');
+            const isRoyal = sashType.includes('ملكي');
+            if (isTwoSides) {
+                const textRight = document.getElementById('sashRightText').value.trim();
+                const imageRight = imageStore['upload-sash-right'];
+                const textLeft = document.getElementById('sashLeftText').value.trim();
+                const imageLeft = imageStore['upload-sash-left'];
+                if (!textRight && !imageRight) return failValidation('sashRight-validation-msg', 'مطلوب.');
+                if (!textLeft && !imageLeft) return failValidation('sashLeft-validation-msg', 'مطلوب.');
+            } else {
+                const textSide = document.getElementById('sashSideText').value.trim();
+                const imageSide = imageStore['upload-sash-side-1'];
+                if (!textSide && !imageSide) return failValidation('sashOneSide-validation-msg', 'مطلوب.');
+            }
+            if (isRoyal) {
+                const textBack = document.getElementById('sashBackText').value.trim();
+                const imageBack1 = imageStore['upload-sash-back-1'];
+                const imageBack2 = imageStore['upload-sash-back-2'];
+                if (!textBack && !imageBack1 && !imageBack2) return failValidation('sashBack-validation-msg', 'مطلوب.');
+            }
+            if (!document.getElementById('sashColor').value.trim()) return failValidation('sashColor-validation-msg', 'مطلوب.');
+            if (!document.getElementById('sashTasselColor').value.trim()) return failValidation('sashTasselColor-validation-msg', 'مطلوب.');
+            if (!document.getElementById('sashEmbroideryColor').value.trim()) return failValidation('sashEmbroideryColor-validation-msg', 'مطلوب.');
+            
+            if (sashType.includes('امريكي')) {
+                const textAmerican = document.getElementById('sashAmericanText').value.trim();
+                const imageAmerican1 = imageStore['upload-sash-american-1'];
+                const imageAmerican2 = imageStore['upload-sash-american-2'];
+                if (!textAmerican && !imageAmerican1 && !imageAmerican2) return failValidation('sashAmericanNotes-validation-msg', 'مطلوب.');
+            }
+            return checkCapValidation();
+        }
+
+        function checkCapValidation() {
+            const capType = document.getElementById('capType').value;
+            if (!capType || capType.includes('لا اريد')) {
+                if (!capType) return failValidation('capType-validation-msg', 'مطلوب.');
+                return checkGownValidation();
+            } else {
+                const capEmbroideryLoc = document.getElementById('capEmbroideryLoc').value;
+                if (!capEmbroideryLoc) return failValidation('capEmbroideryLoc-validation-msg', 'مطلوب.');
+                if (!capEmbroideryLoc.includes('لا اريد تطريز')) {
+                    const topText = document.getElementById('capTopText')?.value.trim();
+                    const topImage = imageStore['upload-cap-top'];
+                    const rimText = document.getElementById('capRimText')?.value.trim();
+                    const rimImage = imageStore['upload-cap-rim'];
+                    if (capEmbroideryLoc.includes('دبل تطريز')) {
+                        if (!topText && !topImage) return failValidation('capTopContent-validation-msg', 'مطلوب.');
+                        if (!rimText && !rimImage) return failValidation('capRimContent-validation-msg', 'مطلوب.');
+                    } else if (capEmbroideryLoc === 'فوق القبعة') {
+                        if (!topText && !topImage) return failValidation('capTopContent-validation-msg', 'مطلوب.');
+                    } else if (capEmbroideryLoc === 'طوق القبعة') {
+                        if (!rimText && !rimImage) return failValidation('capRimContent-validation-msg', 'مطلوب.');
+                    }
+                    if (!document.getElementById('capEmbroideryColor').value.trim()) return failValidation('capEmbroideryColor-validation-msg', 'مطلوب.');
+                }
+                if (!document.getElementById('capColor').value.trim()) return failValidation('capColor-validation-msg', 'مطلوب.');
+                if (!document.getElementById('capTasselColor').value.trim()) return failValidation('capTasselColor-validation-msg', 'مطلوب.');
+            }
+            return checkGownValidation();
+        }
+
+        function checkGownValidation() {
+            const gownType = document.getElementById('gownType').value;
+            if (!gownType || gownType.includes('لا اريد')) {
+                 if (!gownType) return failValidation('gownType-validation-msg', 'مطلوب.');
+            } else {
+                if (gownType === 'روب امريكي') {
+                    const pleats = document.querySelectorAll('[name="americanGownPleats[]"]:checked');
+                    if (pleats.length === 0) return failValidation('americanPleats-validation-msg', 'مطلوب.');
+                }
+                const gownEmbroideryCheckbox = document.querySelector('[name="gownAdditions[]"][value="تطريز الردان"]');
+                if (gownEmbroideryCheckbox && gownEmbroideryCheckbox.checked) {
+                    const gownEmbroideryText = document.getElementById('gownEmbroideryText').value.trim();
+                    const gownEmbroideryImage = imageStore['upload-gown-embroidery'];
+                    if (!gownEmbroideryText && !gownEmbroideryImage) return failValidation('gownEmbroidery-validation-msg', 'مطلوب.');
+                }
+                if (!document.getElementById('gownColor').value.trim()) return failValidation('gownColor-validation-msg', 'مطلوب.');
+            }
+            return true;
+        }
+
+        async function initiateSendProcess() {
+            const fullNameInput = document.querySelector('[name="fullName"]');
+            cleanNameInput(fullNameInput);
+            const fullName = fullNameInput.value;
+            const validation = validateNameSmart(fullName);
+
+            if (!fullName) { Swal.fire('خطأ!', 'يرجى كتابة الاسم الرباعي أولاً', 'error'); return; }
+            if (!validation.valid) { Swal.fire('خطأ في الاسم!', validation.msg, 'error'); fullNameInput.focus(); return; }
+            
+            if (!validateForm()) {
+                Swal.fire({ title: 'بيانات ناقصة!', html: 'الرجاء إكمال جميع الحقول المطلوبة.', icon: 'warning', confirmButtonText: 'حسناً', confirmButtonColor: '#f59e0b' });
+                return;
+            }
+
+            if (window.getAiFormReview) {
+                showLoading(true, "المساعد الذكي يراجع طلبك...");
+                try {
+                    const aiSuggestions = await window.getAiFormReview();
+                    showLoading(false);
+                    if (aiSuggestions && aiSuggestions.length > 0) {
+                        const suggestionsHtml = '<ul style="text-align: right; margin: 10px 20px; list-style-type: disc;">' + 
+                                               aiSuggestions.map(s => `<li style="margin-bottom: 10px; font-size: 1.6rem; color: #065f46;">${s}</li>`).join('') + 
+                                               '</ul>';
+                        const aiResult = await Swal.fire({
+                            title: 'اقتراحات المساعد الذكي',
+                            html: `<p style="margin-bottom: 15px;">لديك بعض الاقتراحات لتحسين طلبك:</p>${suggestionsHtml}`,
+                            icon: 'info',
+                            showDenyButton: true,
+                            confirmButtonText: 'سأقوم بالتعديل',
+                            denyButtonText: 'تجاهل وأرسل الطلب',
+                            confirmButtonColor: '#059669',
+                            denyButtonColor: '#64748b'
+                        });
+                        if (aiResult.isConfirmed) return; 
+                    }
+                } catch (e) {
+                    console.warn("AI Review failed", e);
+                    showLoading(false);
+                }
+            }
+
+            const confirmResult = await Swal.fire({
+                title: 'تأكيد الارسال؟', 
+                text: 'هل أنت متأكد من إرسال واعتماد البيانات؟',
+                icon: 'question', 
+                showCancelButton: true, 
+                confirmButtonColor: '#16a34a', 
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'نعم، تحقق وأرسل', 
+                cancelButtonText: 'إلغاء'
+            });
+
+            if (!confirmResult.isConfirmed) return;
+            showLoading(true, "جاري التحقق من السجلات السابقة...");
+
+            try {
+                const checkResponse = await fetch(SCRIPT_URL, {
+                    method: 'POST', body: JSON.stringify({ action: 'check', name: fullName }) 
+                });
+                const checkData = await checkResponse.json();
+                showLoading(false);
+                if (checkData.exists) {
+                    await Swal.fire({
+                        title: 'انت مسجل مسبقاً!', 
+                        text: 'هناك تسجيلاً سابقاً لك هل ترغب في استبداله أم حجز جديد؟', 
+                        icon: 'warning',
+                        showDenyButton: true, 
+                        showCancelButton: true,
+                        confirmButtonText: 'استبدال التسجيل القديم', 
+                        denyButtonText: 'تسجيل وحجز ثاني',
+                        cancelButtonText: 'الغاء',
+                        confirmButtonColor: '#d97706', 
+                        denyButtonColor: '#2563eb',
+                        cancelButtonColor: '#d33'
+                    }).then((result) => {
+                        if (result.isConfirmed) { finalizeSubmission(fullName, 'replace'); } 
+                        else if (result.isDenied) { finalizeSubmission(fullName, 'second'); }
+                    });
+                } else {
+                    finalizeSubmission(fullName, 'new');
+                }
+            } catch (error) {
+                showLoading(false);
+                Swal.fire({ title: 'تنبيه', text: 'حدث خطأ في الاتصال. سيتم الحفظ كملف جديد.', icon: 'info', confirmButtonText: 'موافق' }).then(() => {
+                    finalizeSubmission(fullName, 'new');
+                });
+            }
+        }
+
+        async function finalizeSubmission(fullName, actionType) {
+            let loadingMsg = "جاري حفظ الاستمارة...";
+            if (actionType === 'replace') loadingMsg = "جاري حذف القديم وحفظ الجديد...";
+            showLoading(true, loadingMsg);
+
+            let fileName = "";
+            const dateStr = new Date().toISOString().split('T')[0];
+            const timeSuffix = new Date().getTime().toString().slice(-4);
+            
+            if (actionType === 'replace') fileName = `${fullName} (أعادة)_${dateStr}.html`;
+            else if (actionType === 'second') fileName = `${fullName} (2)_${dateStr}_${timeSuffix}.html`;
+            else fileName = `${fullName}_${dateStr}_${timeSuffix}.html`;
+
+            const htmlContent = generateExactStaticHTML(fullName);
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST', body: JSON.stringify({ action: actionType === 'second' ? 'new' : actionType, rawName: fullName, filename: fileName, html: htmlContent })
+                });
+                
+                const data = await response.json();
+                showLoading(false);
+                if (data.result === 'success') {
+                    const firstName = fullName.trim().split(/\s+/)[0];
+                    let msg = "";
+                    if (actionType === 'replace') msg = `تم تسليم طلبك الجديد، شكرًا لك يا ${firstName}.`;
+                    else if (actionType === 'second') msg = `تم تسليم طلبك الثاني، شكرًا لك يا ${firstName}.`;
+                    else msg = `تم تسليم طلبك، شكرًا لك يا ${firstName}.`;
+                    Swal.fire('تمت العملية بنجاح!', msg, 'success').then(() => location.reload());
+                } else {
+                    throw new Error(data.error || 'حدث خطأ غير معروف');
+                }
+            } catch (error) {
+                showLoading(false);
+                Swal.fire('خطأ', 'فشل الإرسال، تحقق من الإنترنت', 'error');
+            }
+        }
+
+        function generateExactStaticHTML(fullName) {
+            const originalContainer = document.getElementById('main-form-container');
+            const clone = originalContainer.cloneNode(true);
+            const originalInputs = originalContainer.querySelectorAll('input, textarea, select');
+            const clonedInputs = clone.querySelectorAll('input, textarea, select');
+
+            for (let i = 0; i < originalInputs.length; i++) {
+                const orig = originalInputs[i];
+                const cln = clonedInputs[i];
+                cln.removeAttribute('placeholder'); cln.removeAttribute('oninput'); cln.removeAttribute('onblur');
+                cln.classList.remove('border-red-400', 'border-green-500'); cln.classList.add('border-gray-300');
+
+                if (orig.tagName === 'INPUT' || orig.tagName === 'SELECT') {
+                    let val = orig.value;
+                    if(val.trim() === "") { val = "ــــــــ"; cln.style.color = "#9ca3af"; } 
+                    else { cln.style.color = "#000000"; }
+                    cln.setAttribute('value', val);
+                    if (orig.type === 'checkbox' || orig.type === 'radio') { if (orig.checked) cln.setAttribute('checked', 'checked'); }
+                } else if (orig.tagName === 'TEXTAREA') {
+                    let val = orig.value;
+                    if(val.trim() === "") { val = "ــــــــ"; cln.style.color = "#9ca3af"; } 
+                    else { cln.style.color = "#000000"; }
+                    cln.textContent = val;
+                }
+                cln.setAttribute('readonly', 'true'); cln.classList.add('pointer-events-none', 'bg-white'); 
+            }
+
+            clone.querySelectorAll('*').forEach(el => { el.removeAttribute('onclick'); el.removeAttribute('onchange'); el.removeAttribute('oninput'); el.removeAttribute('onsubmit'); });
+            clone.querySelectorAll('.img-actions').forEach(btn => btn.remove());
+            clone.querySelectorAll('input[type="file"]').forEach(inp => inp.remove());
+            clone.querySelectorAll('.option-card').forEach(card => { card.style.cursor = 'default'; card.style.pointerEvents = 'none'; });
+            const warningMsg = clone.querySelector('#name-warning-msg'); if (warningMsg) warningMsg.remove();
+            clone.querySelectorAll('.validation-message').forEach(msg => msg.remove());
+            clone.querySelectorAll('.ai-suggestion').forEach(el => el.remove());
+            clone.querySelectorAll('.ai-loading').forEach(el => el.remove());
+
+            clone.querySelectorAll('.upload-box').forEach(box => {
+                box.style.pointerEvents = 'none'; box.style.cursor = 'default';
+                const collageBtn = box.querySelector('button'); if(collageBtn) collageBtn.remove();
+                if(box.classList.contains('has-image')) { box.style.borderStyle = 'solid'; } 
+                else {
+                    box.innerHTML = `<div class="flex flex-col items-center justify-center text-gray-400 opacity-70"><i class="fas fa-image-slash mb-2" style="font-size: 4rem;"></i><span class="font-bold text-2xl">لم يتم ارفاق صورة</span></div></div>`;
+                    box.style.backgroundColor = "#f8fafc"; box.style.borderColor = "#e2e8f0";
+                }
+            });
+
+            const hiddenSections = clone.querySelectorAll('.hidden');
+            hiddenSections.forEach(section => section.remove());
+
+            clone.querySelectorAll('.instruction-trigger').forEach(el => {
+                el.classList.remove('instruction-trigger');
+                el.removeAttribute('onclick');
+            });
+            clone.querySelectorAll('[id^="dynamic-sash-type-"]').forEach(el => el.removeAttribute('id'));
+
+            // Capture Drawing
+            let drawingOverlayHtml = '';
+            const canvasEl = document.getElementById('drawing-canvas');
+            if (canvasEl) {
+                const canvasDataUrl = canvasEl.toDataURL();
+                drawingOverlayHtml = `<img src="${canvasDataUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none;">`;
+            }
+
+            let headContent = document.head.innerHTML;
+            const desktopViewport = '<meta name="viewport" content="width=1280, user-scalable=yes">';
+            if (headContent.includes('<meta name="viewport"')) { headContent = headContent.replace(/<meta name="viewport"[^>]*>/gi, desktopViewport); } 
+            else { headContent += desktopViewport; }
+
+            headContent = headContent.replace(/<script.*cropper.*><\/script>/g, '').replace(/<link.*cropper.*>/g, '');
+
+            return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    ${headContent}
+    <style>
+        body { background-color: #f1f5f9; padding-bottom: 50px; min-width: 1280px; width: 1280px; margin: 0 auto; position: relative; font-size: 20px; }
+        .swal2-container { position: absolute !important; width: 100% !important; height: 100% !important; top: 0 !important; left: 0 !important; padding-top: 220px !important; align-items: flex-start !important; }
+        .swal2-popup { font-size: 1.8rem !important; width: 650px !important; padding: 2.5rem !important; border-radius: 1.5rem !important; }
+        .swal2-title { font-size: 2.8rem !important; margin-bottom: 1rem !important; }
+        .swal2-html-container { font-size: 2rem !important; }
+        .swal2-styled { font-size: 1.5rem !important; padding: 1rem 2rem !important; }
+        .no-print { display: none !important; }
+        input:focus, textarea:focus { outline: none; box-shadow: none; border-color: #e2e8f0; }
+        .img-actions { display: none !important; }
+        html { overflow-x: auto; }
+        #image-editor-modal { display: none !important; }
+        #custom-instruction-modal { display: none !important; } 
+        #image-viewer-modal { display: none !important; }
+        #collage-modal { display: none !important; }
+        #drawing-fab-container { display: none !important; } 
+        #drawing-canvas { display: none !important; } 
+        
+        .instruction-trigger { cursor: default !important; background: none !important; }
+        .instruction-trigger::before { content: none !important; }
+        .help-btn { display: none !important; }
+        .ai-suggestion, .ai-loading { display: none !important; }
+        
+        .custom-input, input[type="text"], textarea { 
+            padding: 1rem !important; 
+            border-width: 4px !important; 
+            font-size: 1.5rem !important; 
+            font-weight: 700 !important;
+            border-radius: 1.5rem !important;
+        }
+        #input-fullName {
+            font-size: 2.2rem !important; 
+            padding: 1.5rem !important;
+            font-weight: 900 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    ${drawingOverlayHtml}
+    <header class="bg-white shadow-lg sticky top-0 z-40 border-b-8 border-gray-200 mb-10 w-full">
+        <div class="w-full px-10 py-6 flex justify-between items-center">
+             <h1 class="text-4xl font-black text-gray-900">استمارة الطالب: ${fullName}</h1>
+             <span class="text-2xl font-black text-blue-800 bg-blue-100 px-6 py-3 rounded-full">نسخة للعرض فقط</span>
+        </div>
+    </header>
+    ${clone.outerHTML}
+    <footer class="text-center py-12 text-gray-600 text-2xl font-black mt-16 border-t-8 border-gray-200">
+        تم حفظ هذه النسخة بتاريخ ${new Date().toLocaleDateString('ar-EG')}
+    </footer>
+</body>
+</html>`;
+        }
+    </script>
+    
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const fieldLabels = {
+            'sashColor': 'لون الوشاح',
+            'sashTasselColor': 'لون كركوشة الوشاح',
+            'sashEmbroideryColor': 'لون تطريز الوشاح',
+            'sashRightText': 'نص الجهة اليمنى للوشاح',
+            'sashLeftText': 'نص الجهة اليسرى للوشاح',
+            'sashSideText': 'نص الوشاح الجانبي',
+            'sashBackText': 'نص الوشاح الخلفي',
+            'sashAmericanText': 'ملاحظات الوشاح الأمريكي',
+            'capColor': 'لون القبعة',
+            'capEmbroideryColor': 'لون تطريز القبعة',
+            'capTasselColor': 'لون كركوشة القبعة',
+            'capTopText': 'نص تطريز فوق القبعة',
+            'capRimText': 'نص تطريز طوق القبعة',
+            'gownColor': 'لون الروب',
+            'gownEmbroideryText': 'نص تطريز الردان'
+        };
+
+        function ensureAiContainer(inputElement) {
+            const id = inputElement.id;
+            let container = document.getElementById(`ai-msg-${id}`);
+            if (!container) {
+                container = document.createElement('div');
+                container.id = `ai-msg-${id}`;
+                container.className = 'ai-suggestion';
+                container.innerHTML = '<span style="font-size: 1.6rem;">🕺</span><span class="ai-suggestion-text"></span>';
+                const loader = document.createElement('div');
+                loader.id = `ai-load-${id}`;
+                loader.className = 'ai-loading';
+                loader.innerHTML = '<i class="fas fa-spinner"></i><span>المساعد الذكي يفكر...</span>';
+                inputElement.parentNode.insertBefore(loader, inputElement.nextSibling);
+                inputElement.parentNode.insertBefore(container, loader.nextSibling);
+            }
+            return { msgBox: container, loader: document.getElementById(`ai-load-${id}`) };
+        }
+
+        window.triggerFieldAnalysis = async function(inputElement) {
+            const fieldId = inputElement.id;
+            const value = inputElement.value.trim();
+            const label = fieldLabels[fieldId];
+            if (!label || !value) {
+                const existing = document.getElementById(`ai-msg-${fieldId}`);
+                if (existing) existing.classList.remove('visible');
+                return;
+            }
+            const fullName = document.getElementById('input-fullName').value;
+            const firstName = fullName.trim().split(/\s+/)[0] || 'عزيزي';
+            let hasImage = "No";
+            const parent = inputElement.closest('.upload-container-wrapper');
+            if (parent && parent.querySelector('.upload-box.has-image')) hasImage = "Yes";
+
+            const { msgBox, loader } = ensureAiContainer(inputElement);
+            msgBox.classList.remove('visible');
+            loader.classList.add('visible');
+
+            try {
+                const prompt = `
+                أنت مساعد ذكي في استمارة طلب زي تخرج.
+                اسم المستخدم: ${firstName}.
+                الحقل الحالي: "${label}".
+                القيمة المدخلة: "${value}".
+                هل يوجد صورة مرفقة مع النص؟ ${hasImage}.
+                مهمتك: تقديم نصيحة قصيرة جداً (أقل من 15 كلمة) باللهجة العربية البسيطة أو الفصحى الودودة، فقط إذا كان هناك مشكلة.
+                القواعد:
+                1. اذا كان الحقل لون: تأكد انه اسم لون معروف. اذا كان غريباً اقترح التأكد.
+                2. اذا كان الحقل نص تطريز ولا يوجد صورة مرفقة: اقترح "يا ${firstName}، يفضل ترفق صورة للتوضيح عشان يطلع التصميم مثل ما تحب".
+                3. اذا النص غير لائق او ليس له علاقة بالتخرج: نبه بلطف.
+                4. اذا كل شيء تمام، لا ترجع أي نص (نص فارغ).
+                `;
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: prompt,
+                });
+                const suggestion = response.text.trim();
+                loader.classList.remove('visible');
+                if (suggestion && suggestion.length > 2) {
+                    msgBox.querySelector('span').innerText = suggestion;
+                    msgBox.classList.add('visible');
+                } else {
+                    msgBox.classList.remove('visible');
+                }
+            } catch (error) {
+                console.error("AI Analysis Error:", error);
+                loader.classList.remove('visible');
+            }
+        };
+
+        window.getAiFormReview = async function() {
+            const fullName = document.getElementById('input-fullName').value;
+            const firstName = fullName.trim().split(/\s+/)[0] || 'عزيزي';
+            const data = {
+                sashColor: document.getElementById('sashColor').value,
+                sashTassel: document.getElementById('sashTasselColor').value,
+                sashEmbroidery: document.getElementById('sashEmbroideryColor').value,
+                capColor: document.getElementById('capColor').value,
+                capEmbroidery: document.getElementById('capEmbroideryColor').value,
+                capTassel: document.getElementById('capTasselColor').value,
+                gownColor: document.getElementById('gownColor').value,
+                texts: []
+            };
+            document.querySelectorAll('textarea, input[type="text"]').forEach(el => {
+                if (fieldLabels[el.id] && el.value.trim()) {
+                    data.texts.push({ field: fieldLabels[el.id], value: el.value });
+                }
+            });
+            const embroideryLocs = document.querySelectorAll('.upload-box.has-image').length;
+            const prompt = `
+            راجع استمارة تخرج الطالب: ${firstName}.
+            البيانات: ${JSON.stringify(data)}.
+            عدد الصور/مواقع التطريز: ${embroideryLocs}.
+            المطلوب: قائمة نصائح (List of strings) بتنسيق JSON.
+            القواعد:
+            1. تناسق الألوان: هل الوشاح والقبعة والروب ألوانهم متناسقة؟ اذا في تضارب قوي نبهه.
+            2. التكلفة: اذا عدد مواقع التطريز أكثر من 3، نبه بلطف "يا ${firstName}، كثرة الإضافات والتطريز ممكن تزيد التكلفة، تأكد انك محتاج كل هالتفاصيل".
+            3. المحتوى: اي نص غريب نبه عليه.
+            4. أرجع فقط الاقتراحات المهمة. اذا الاستمارة ممتازة ارجع مصفوفة فارغة [].
+            الرد يجب ان يكون JSON فقط:
+            { "suggestions": ["نصيحة 1", "نصيحة 2"] }
+            `;
+            try {
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: prompt,
+                    config: { responseMimeType: "application/json" }
+                });
+                const result = JSON.parse(response.text);
+                return result.suggestions || [];
+            } catch (e) {
+                console.error("Full Review Error", e);
+                return [];
+            }
+        };
+    </script>
+</body>
+</html>
