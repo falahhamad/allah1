@@ -39,6 +39,7 @@
             min-height: 100vh;
             overflow-x: hidden;
             font-size: 20px; 
+            touch-action: pan-y; /* Allow vertical scroll by default */
         }
 
         /* ========================================= */
@@ -1821,51 +1822,29 @@
             if(!drawCanvas) return;
             drawCtx = drawCanvas.getContext('2d');
             
-            // Resize canvas to full document size
+            // Resize canvas to full viewport size
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             
-            // Mouse/Touch Events
+            // Mouse Events
             drawCanvas.addEventListener('mousedown', startDrawing);
             drawCanvas.addEventListener('mousemove', draw);
             drawCanvas.addEventListener('mouseup', stopDrawing);
             drawCanvas.addEventListener('mouseout', stopDrawing);
             
-            drawCanvas.addEventListener('touchstart', (e) => {
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent("mousedown", {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                });
-                drawCanvas.dispatchEvent(mouseEvent);
-            }, false);
-            
-            drawCanvas.addEventListener('touchmove', (e) => {
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent("mousemove", {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                });
-                drawCanvas.dispatchEvent(mouseEvent);
-            }, false);
-
-            drawCanvas.addEventListener('touchend', (e) => {
-                const mouseEvent = new MouseEvent("mouseup", {});
-                drawCanvas.dispatchEvent(mouseEvent);
-            }, false);
+            // Touch Events (passive: false is important for preventDefault)
+            drawCanvas.addEventListener('touchstart', startDrawing, { passive: false });
+            drawCanvas.addEventListener('touchmove', draw, { passive: false });
+            drawCanvas.addEventListener('touchend', stopDrawing, { passive: false });
         }
 
         function resizeCanvas() {
             if(drawCanvas) {
-                // Ensure canvas covers the full scrollable height
-                const docHeight = Math.max(
-                    document.body.scrollHeight, document.body.offsetHeight, 
-                    document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight
-                );
-                drawCanvas.width = document.documentElement.clientWidth;
-                drawCanvas.height = docHeight;
+                // Set canvas size to viewport size
+                drawCanvas.width = window.innerWidth;
+                drawCanvas.height = window.innerHeight;
                 
-                // Redraw history if any (simple implementation: clear and restore last state if preserved in memory, but canvas resize clears it)
+                // Redraw history if exists
                 if (drawHistoryIndex >= 0) {
                     const img = new Image();
                     img.onload = () => drawCtx.drawImage(img, 0, 0);
@@ -1882,13 +1861,19 @@
             const icon = document.getElementById('btn-toggle-icon');
 
             if (isDrawMode) {
+                // Lock scrolling
+                document.body.style.overflow = 'hidden';
+                
                 fab.classList.add('active');
-                icon.className = "fas fa-check"; // Checkmark to finish
+                icon.className = "fas fa-check"; 
                 toolbar.classList.remove('hidden');
                 canvas.classList.add('active');
-                // Ensure canvas is sized correctly before starting
+                
                 resizeCanvas();
             } else {
+                // Unlock scrolling
+                document.body.style.overflow = '';
+                
                 fab.classList.remove('active');
                 icon.className = "fas fa-paint-brush";
                 toolbar.classList.add('hidden');
@@ -1896,78 +1881,39 @@
             }
         };
 
-        window.setDrawTool = function(tool) {
-            currentDrawTool = tool;
-            document.querySelectorAll('.dt-btn').forEach(b => b.classList.remove('active'));
-            const buttons = document.querySelectorAll('.dt-btn');
-            // Mapping based on index
-            if(tool === 'pencil') buttons[0].classList.add('active');
-            if(tool === 'line') buttons[1].classList.add('active');
-            if(tool === 'arrow') buttons[2].classList.add('active');
-            if(tool === 'rect') buttons[3].classList.add('active');
-            if(tool === 'circle') buttons[4].classList.add('active');
-            if(tool === 'eraser') buttons[5].classList.add('active');
-        };
-
-        window.setDrawColor = function(color, el) {
-            currentDrawColor = color;
-            document.querySelectorAll('.dt-color').forEach(c => c.classList.remove('active'));
-            el.classList.add('active');
-        };
-
-        window.setDrawSize = function(size) {
-            currentDrawSize = size;
-        };
-
-        window.drawClear = function() {
-            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-            saveDrawState();
-        };
-
-        window.drawUndo = function() {
-            if (drawHistoryIndex > 0) {
-                drawHistoryIndex--;
-                const img = new Image();
-                img.onload = () => {
-                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-                    drawCtx.drawImage(img, 0, 0);
-                };
-                img.src = drawHistory[drawHistoryIndex];
+        // Helper for coordinates
+        function getPointerPos(e) {
+            const rect = drawCanvas.getBoundingClientRect();
+            let clientX, clientY;
+            
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            } else if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
             } else {
-                drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-                drawHistoryIndex = -1;
+                clientX = e.clientX;
+                clientY = e.clientY;
             }
-        };
 
-        window.drawRedo = function() {
-            if (drawHistoryIndex < drawHistory.length - 1) {
-                drawHistoryIndex++;
-                const img = new Image();
-                img.onload = () => {
-                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-                    drawCtx.drawImage(img, 0, 0);
-                };
-                img.src = drawHistory[drawHistoryIndex];
-            }
-        };
-
-        function saveDrawState() {
-            drawHistoryIndex++;
-            if (drawHistoryIndex < drawHistory.length) {
-                drawHistory.length = drawHistoryIndex; // Remove future history if we drew something new
-            }
-            drawHistory.push(drawCanvas.toDataURL());
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
         }
 
         function startDrawing(e) {
             if (!isDrawMode) return;
-            isDrawing = true;
-            // Get coordinates relative to canvas
-            const rect = drawCanvas.getBoundingClientRect();
-            drawStartX = e.clientX - rect.left; // x position within the element.
-            drawStartY = e.clientY - rect.top;  // y position within the element.
+            // Prevent default to stop scrolling
+            if (e.cancelable) e.preventDefault(); 
             
-            // For shapes, save snapshot to restore while dragging
+            isDrawing = true;
+            const pos = getPointerPos(e);
+            drawStartX = pos.x; 
+            drawStartY = pos.y;  
+            
+            // Snapshot for shapes
             if (currentDrawTool !== 'pencil' && currentDrawTool !== 'eraser') {
                 drawSnapshot = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
             }
@@ -1976,7 +1922,7 @@
             drawCtx.lineWidth = currentDrawSize;
             drawCtx.lineCap = 'round';
             drawCtx.lineJoin = 'round';
-            drawCtx.strokeStyle = currentDrawTool === 'eraser' ? 'rgba(0,0,0,1)' : currentDrawColor; // Eraser uses destination-out
+            drawCtx.strokeStyle = currentDrawTool === 'eraser' ? 'rgba(0,0,0,1)' : currentDrawColor; 
             
             if (currentDrawTool === 'eraser') {
                 drawCtx.globalCompositeOperation = 'destination-out';
@@ -1984,21 +1930,22 @@
                 drawCtx.globalCompositeOperation = 'source-over';
             }
 
-            // Move to start
             drawCtx.moveTo(drawStartX, drawStartY);
         }
 
         function draw(e) {
             if (!isDrawing) return;
-            const rect = drawCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            if (e.cancelable) e.preventDefault();
+
+            const pos = getPointerPos(e);
+            const x = pos.x;
+            const y = pos.y;
 
             if (currentDrawTool === 'pencil' || currentDrawTool === 'eraser') {
                 drawCtx.lineTo(x, y);
                 drawCtx.stroke();
             } else {
-                // Restore snapshot for shapes (to avoid trail)
+                // Shapes logic
                 drawCtx.putImageData(drawSnapshot, 0, 0);
                 drawCtx.beginPath();
                 drawCtx.moveTo(drawStartX, drawStartY);
@@ -2037,12 +1984,78 @@
             ctx.stroke();
         }
 
-        function stopDrawing() {
+        function stopDrawing(e) {
             if (!isDrawing) return;
+            if (e.type !== 'mouseout') {
+                 if (e.cancelable) e.preventDefault();
+            }
             isDrawing = false;
             drawCtx.closePath();
             saveDrawState();
         }
+
+        function saveDrawState() {
+            drawHistoryIndex++;
+            if (drawHistoryIndex < drawHistory.length) {
+                drawHistory.length = drawHistoryIndex; // Remove future history if we drew something new
+            }
+            drawHistory.push(drawCanvas.toDataURL());
+        }
+
+        window.drawClear = function() {
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            saveDrawState();
+        };
+
+        window.drawUndo = function() {
+            if (drawHistoryIndex > 0) {
+                drawHistoryIndex--;
+                const img = new Image();
+                img.onload = () => {
+                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                    drawCtx.drawImage(img, 0, 0);
+                };
+                img.src = drawHistory[drawHistoryIndex];
+            } else {
+                drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                drawHistoryIndex = -1;
+            }
+        };
+
+        window.drawRedo = function() {
+            if (drawHistoryIndex < drawHistory.length - 1) {
+                drawHistoryIndex++;
+                const img = new Image();
+                img.onload = () => {
+                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                    drawCtx.drawImage(img, 0, 0);
+                };
+                img.src = drawHistory[drawHistoryIndex];
+            }
+        };
+
+        window.setDrawTool = function(tool) {
+            currentDrawTool = tool;
+            document.querySelectorAll('.dt-btn').forEach(b => b.classList.remove('active'));
+            const buttons = document.querySelectorAll('.dt-btn');
+            // Mapping based on index
+            if(tool === 'pencil') buttons[0].classList.add('active');
+            if(tool === 'line') buttons[1].classList.add('active');
+            if(tool === 'arrow') buttons[2].classList.add('active');
+            if(tool === 'rect') buttons[3].classList.add('active');
+            if(tool === 'circle') buttons[4].classList.add('active');
+            if(tool === 'eraser') buttons[5].classList.add('active');
+        };
+
+        window.setDrawColor = function(color, el) {
+            currentDrawColor = color;
+            document.querySelectorAll('.dt-color').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        };
+
+        window.setDrawSize = function(size) {
+            currentDrawSize = size;
+        };
 
         // --- Touch Logic (Pinch & Pan) ---
         const viewerImage = document.getElementById('viewer-image');
