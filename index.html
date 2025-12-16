@@ -54,20 +54,21 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 50; /* فوق المحتوى ولكن تحت العناصر المنبثقة */
-            pointer-events: none; /* افتراضيا لا يتفاعل */
-            touch-action: none; /* منع التمرير عند الرسم */
+            /* تعديل: رفع الطبقة لتكون فوق حقول الإدخال (60) */
+            z-index: 80; 
+            pointer-events: none; /* افتراضيا لا يتفاعل لتتمكن من الكتابة */
+            touch-action: none; 
         }
         
         body.drawing-mode-active .section-drawing-canvas {
             pointer-events: auto; /* تفعيل التفاعل عند وضع الرسم */
             cursor: crosshair;
-            background-color: rgba(255, 255, 255, 0.01); /* لون خفيف جدا لضمان التقاط الأحداث */
+            background-color: rgba(255, 255, 255, 0.01); 
         }
 
         /* تحسين التموضع لضمان عدم تغطية الأزرار الهامة عند عدم الرسم */
         body:not(.drawing-mode-active) .section-drawing-canvas {
-            display: block; /* تبقى ظاهرة لرؤية الرسم */
+            display: block; 
         }
 
         /* ========================================= */
@@ -139,7 +140,8 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             line-height: 1;
-            z-index: 60; /* فوق طبقة الرسم للتفاعل */
+            /* أعلى من الرسم ليمكن ضغطه حتى والرسم مفعل جزئياً إذا دعت الحاجة، لكن عند الرسم الكامل الكانفس يغطيه */
+            z-index: 90; 
             position: relative;
         }
         .help-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
@@ -367,7 +369,8 @@
             font-size: 1.5rem !important; /* حجم خط موحد وصغير (28-30px تقريباً) لجميع الحقول */
             font-weight: 700 !important;
             border-radius: 1.5rem !important;
-            position: relative; z-index: 60;
+            position: relative; 
+            z-index: 60; /* تحت طبقة الرسم */
         }
         .custom-input:focus, input[type="text"]:focus, textarea:focus { 
             transform: translateY(-3px); 
@@ -2163,6 +2166,25 @@
             viewerModal.addEventListener('touchend', (e) => { isPinching = false; isDragging = false; if (currentViewerScale <= 1.1) { currentViewerScale = 1; translateX = 0; translateY = 0; updateTransform(); } });
             viewerModal.addEventListener('click', function(e) { if (e.target === this && !isDragging && !isPinching) { window.closeImageViewer(); } });
         }
+        
+        // --- Helper to Clear Section Drawing ---
+        function clearSectionCanvas(element) {
+            // Find the parent section container (the one with shadow-lg and border-8)
+            const section = element.closest('.shadow-lg.border-8'); 
+            if (!section) return;
+            
+            const canvas = section.querySelector('.section-drawing-canvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Reset history for this specific canvas
+                const id = canvas.dataset.sectionId;
+                if (canvasHistories[id]) {
+                    canvasHistories[id] = { history: [], index: -1 };
+                }
+            }
+        }
 
         // --- WINDOW BINDING ---
         window.selectOption = selectOption;
@@ -2208,11 +2230,14 @@
         window.drawRedo = window.drawRedo;
 
         // --- Existing functions from previous context ---
-        // I'll add the essential ones back to ensure no breakage
         
         function selectOption(inputId, value, element, theme) {
             const input = document.getElementById(inputId);
             if(!input) return;
+            
+            // Clear drawing for this section because selection changed
+            clearSectionCanvas(element);
+
             input.value = value;
             const parent = element.parentElement;
             parent.querySelectorAll('.option-card').forEach(c => {
@@ -2226,6 +2251,9 @@
         }
 
         function selectSashBase(value, element) {
+            // Clear drawing for this section
+            clearSectionCanvas(element);
+
             baseSashType = value;
             document.querySelectorAll('.sash-base-card').forEach(c => {
                 c.classList.remove('active-purple', 'active-gray');
@@ -2235,6 +2263,8 @@
         }
 
         function selectNoSash(element) {
+            clearSectionCanvas(element);
+
             baseSashType = 'لا اريد وشاح';
             isAmericanSash = false; 
             document.querySelectorAll('.sash-base-card').forEach(c => {
@@ -2249,6 +2279,8 @@
         }
 
         function toggleAmericanCard(element) {
+            clearSectionCanvas(element);
+
             if(baseSashType === 'لا اريد وشاح') return;
             isAmericanSash = !isAmericanSash;
             if (isAmericanSash) element.classList.add('active-purple');
@@ -2257,6 +2289,8 @@
         }
         
         function toggleCheckboxStyle(checkbox, theme = 'emerald') {
+            clearSectionCanvas(checkbox);
+
             const label = checkbox.parentElement;
             const activeClass = `checkbox-wrapper-active`; 
             if (checkbox.checked) label.classList.add(activeClass);
@@ -3114,21 +3148,6 @@
             // Iterate over all canvases in the original DOM
             const canvases = document.querySelectorAll('.section-drawing-canvas');
             canvases.forEach((canvas, index) => {
-                // Find corresponding canvas in clone
-                // Since we cloned main-form-container, the structure is identical.
-                // We need to match by hierarchy or index.
-                // However, our canvases might be inside header too, which isn't in main-form-container clone?
-                // Wait, generateExactStaticHTML only clones main-form-container. 
-                // Drawings on header won't be saved if we only use 'clone'.
-                // But the user asked to save drawings.
-                
-                // Let's attach images to the clone.
-                // The clone is a fragment.
-                const cloneCanvases = clone.querySelectorAll('.section-drawing-canvas');
-                // This assumes exact match order.
-                // NOTE: querySelectorAll on clone might return different set if hidden sections were removed.
-                // Better approach: use data-section-id.
-                
                 const id = canvas.dataset.sectionId;
                 const cloneCanvas = clone.querySelector(`.section-drawing-canvas[data-section-id="${id}"]`);
                 
@@ -3142,7 +3161,8 @@
                     img.style.left = '0';
                     img.style.width = '100%';
                     img.style.height = '100%';
-                    img.style.zIndex = '50';
+                    /* Update: Use same z-index as drawing canvas so it covers inputs in saved form too */
+                    img.style.zIndex = '80'; 
                     img.style.pointerEvents = 'none';
                     cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
                 }
@@ -3203,7 +3223,7 @@
         ${(() => {
             const headerCanvas = document.querySelector('header .section-drawing-canvas');
             if (headerCanvas) {
-                return `<img src="${headerCanvas.toDataURL()}" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:50; pointer-events:none;">`;
+                return `<img src="${headerCanvas.toDataURL()}" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:80; pointer-events:none;">`;
             }
             return '';
         })()}
