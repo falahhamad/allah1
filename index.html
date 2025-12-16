@@ -39,7 +39,35 @@
             min-height: 100vh;
             overflow-x: hidden;
             font-size: 20px; 
-            touch-action: pan-y; /* Allow vertical scroll by default */
+            /* touch-action handled dynamically */
+        }
+
+        /* حاويات الأقسام التي سيتم الرسم عليها */
+        section, header {
+            position: relative !important; /* ضروري لتموضع الكانفس داخله */
+        }
+
+        /* --- Drawing Tool CSS Updated --- */
+        .section-drawing-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50; /* فوق المحتوى ولكن تحت العناصر المنبثقة */
+            pointer-events: none; /* افتراضيا لا يتفاعل */
+            touch-action: none; /* منع التمرير عند الرسم */
+        }
+        
+        body.drawing-mode-active .section-drawing-canvas {
+            pointer-events: auto; /* تفعيل التفاعل عند وضع الرسم */
+            cursor: crosshair;
+            background-color: rgba(255, 255, 255, 0.01); /* لون خفيف جدا لضمان التقاط الأحداث */
+        }
+
+        /* تحسين التموضع لضمان عدم تغطية الأزرار الهامة عند عدم الرسم */
+        body:not(.drawing-mode-active) .section-drawing-canvas {
+            display: block; /* تبقى ظاهرة لرؤية الرسم */
         }
 
         /* ========================================= */
@@ -111,6 +139,8 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             line-height: 1;
+            z-index: 60; /* فوق طبقة الرسم للتفاعل */
+            position: relative;
         }
         .help-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
         .help-btn:active { transform: translateY(0) scale(0.98); }
@@ -308,15 +338,15 @@
         }
 
         /* --- Standard Styles --- */
-        .option-card { cursor: pointer; border: 5px solid #cbd5e1; border-radius: 1.2rem; padding: 2rem 1rem; font-size: 1.7rem; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background-color: white; min-height: 140px; font-weight: 900; color: #1e293b; position: relative; }
+        .option-card { cursor: pointer; border: 5px solid #cbd5e1; border-radius: 1.2rem; padding: 2rem 1rem; font-size: 1.7rem; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background-color: white; min-height: 140px; font-weight: 900; color: #1e293b; position: relative; z-index: 60; }
         .option-card:hover { border-color: #64748b; transform: translateY(-5px); box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.15); }
         .option-card.active-purple { background-color: #f3e8ff; border-color: #7e22ce; color: #581c87; box-shadow: 0 0 0 6px #d8b4fe; transform: scale(1.02); z-index: 10; }
         .option-card.active-indigo { background-color: #e0e7ff; border-color: #4f46e5; color: #312e81; box-shadow: 0 0 0 5px #a5b4fc; transform: scale(1.02); z-index: 10; }
         .option-card.active-emerald { background-color: #d1fae5; border-color: #059669; color: #064e3b; box-shadow: 0 0 0 5px #6ee7b7; transform: scale(1.02); z-index: 10; }
         .option-card.active-gray { background-color: #f3f4f6; border-color: #4b5563; color: #111827; box-shadow: 0 0 0 5px #9ca3af; transform: scale(1.02); z-index: 10; }
         .checkbox-wrapper-active { background-color: #d1fae5 !important; border-color: #059669 !important; color: #064e3b !important; box-shadow: 0 0 0 4px #6ee7b7 !important; }
-        .upload-container-wrapper { width: 100%; max-width: 100%; margin: 0 auto; }
-        .upload-box { width: 100%; aspect-ratio: 1 / 1; border: 5px dashed #94a3b8; border-radius: 1.5rem; position: relative; background-color: #f8fafc; transition: all 0.3s; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .upload-container-wrapper { width: 100%; max-width: 100%; margin: 0 auto; position: relative; z-index: 60; }
+        .upload-box { width: 100%; aspect-ratio: 1 / 1; border: 5px dashed #94a3b8; border-radius: 1.5rem; position: relative; background-color: #f8fafc; transition: all 0.3s; overflow: hidden; display: flex; align-items: center; justify-content: center; z-index: 60; }
         .upload-box:hover { border-color: #3b82f6; background-color: #eff6ff; }
         .upload-box.has-image { border-style: solid; border-color: #cbd5e1; background-color: #fff; border-width: 5px; }
         .upload-placeholder { text-align: center; color: #64748b; pointer-events: none; padding: 1rem; }
@@ -337,6 +367,7 @@
             font-size: 1.5rem !important; /* حجم خط موحد وصغير (28-30px تقريباً) لجميع الحقول */
             font-weight: 700 !important;
             border-radius: 1.5rem !important;
+            position: relative; z-index: 60;
         }
         .custom-input:focus, input[type="text"]:focus, textarea:focus { 
             transform: translateY(-3px); 
@@ -578,20 +609,6 @@
         }
 
         /* --- Drawing Tool CSS --- */
-        .drawing-canvas {
-            position: fixed; /* Changed from absolute to fixed to ensure it stays on screen */
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 9999;
-            pointer-events: none; /* Initially pass-through to allow form interaction */
-        }
-        .drawing-canvas.active {
-            pointer-events: auto; /* Capture events when drawing mode is on */
-            cursor: crosshair;
-            background-color: rgba(255, 255, 255, 0.05); /* Slight tint to indicate mode */
-        }
         
         /* Floating Button Container - Centered Horizontal Strip */
         #drawing-fab-container {
@@ -733,9 +750,6 @@
         <h3 id="loading-text">جاري المعالجة...</h3>
     </div>
 
-    <!-- Drawing Canvas -->
-    <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
-
     <!-- Drawing Floating UI -->
     <div id="drawing-fab-container" class="no-print">
         
@@ -772,7 +786,6 @@
             <!-- Actions Group -->
             <div class="dt-row">
                 <button class="dt-action dt-undo-redo" onclick="window.drawUndo()"><i class="fas fa-undo"></i></button>
-                <button class="dt-action dt-undo-redo" onclick="window.drawRedo()"><i class="fas fa-redo"></i></button>
                 <button class="dt-action dt-clear" onclick="window.drawClear()"><i class="fas fa-trash-alt"></i></button>
             </div>
         </div>
@@ -1655,16 +1668,17 @@
 
         // --- Drawing Tool Variables ---
         let isDrawMode = false;
-        let drawCanvas, drawCtx;
         let isDrawing = false;
         let drawStartX, drawStartY;
         let drawSnapshot;
-        let drawHistory = [];
-        let drawHistoryIndex = -1;
         
-        let currentDrawTool = 'pencil'; // pencil, line, rect, circle, arrow, eraser
+        // Use a history object where key is canvas ID
+        let canvasHistories = {};
+        
+        let currentDrawTool = 'pencil'; 
         let currentDrawColor = '#ef4444';
         let currentDrawSize = 5;
+        let activeCanvas = null; // The canvas currently being drawn on
 
         // --- دالة الفتح السريع ---
         window.openPreloadedInstruction = function(groupKey, mainTitle) {
@@ -1812,78 +1826,110 @@
                 });
             });
 
-            // Init Drawing Canvas
-            initDrawingCanvas();
+            // Init Drawing Tool - New Multi-Canvas Strategy
+            initSectionCanvases();
         });
 
-        // --- Drawing Tool Logic ---
-        function initDrawingCanvas() {
-            drawCanvas = document.getElementById('drawing-canvas');
-            if(!drawCanvas) return;
-            drawCtx = drawCanvas.getContext('2d');
+        // --- New Multi-Section Drawing Logic ---
+        function initSectionCanvases() {
+            // Find major containers: the main white cards (border-8) and the header
+            const containers = document.querySelectorAll('.shadow-lg.border-8, header.shadow-lg');
             
-            // Resize canvas to full viewport size
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
+            containers.forEach((container, index) => {
+                // Ensure container is relative so canvas is absolute to it
+                if (getComputedStyle(container).position === 'static') {
+                    container.style.position = 'relative';
+                }
+
+                let canvas = container.querySelector('.section-drawing-canvas');
+                if (!canvas) {
+                    canvas = document.createElement('canvas');
+                    canvas.className = 'section-drawing-canvas';
+                    canvas.dataset.sectionId = `sec-${index}`;
+                    
+                    // Initialize history for this canvas
+                    canvasHistories[`sec-${index}`] = {
+                        history: [],
+                        index: -1
+                    };
+                    
+                    container.appendChild(canvas);
+                    setupCanvasEvents(canvas);
+                }
+            });
             
-            // Mouse Events
-            drawCanvas.addEventListener('mousedown', startDrawing);
-            drawCanvas.addEventListener('mousemove', draw);
-            drawCanvas.addEventListener('mouseup', stopDrawing);
-            drawCanvas.addEventListener('mouseout', stopDrawing);
-            
-            // Touch Events (passive: false is important for preventDefault)
-            drawCanvas.addEventListener('touchstart', startDrawing, { passive: false });
-            drawCanvas.addEventListener('touchmove', draw, { passive: false });
-            drawCanvas.addEventListener('touchend', stopDrawing, { passive: false });
+            resizeCanvases();
+            window.addEventListener('resize', resizeCanvases);
         }
 
-        function resizeCanvas() {
-            if(drawCanvas) {
-                // Set canvas size to viewport size
-                drawCanvas.width = window.innerWidth;
-                drawCanvas.height = window.innerHeight;
+        function resizeCanvases() {
+            document.querySelectorAll('.section-drawing-canvas').forEach(canvas => {
+                const parent = canvas.parentElement;
+                const rect = parent.getBoundingClientRect();
                 
-                // Redraw history if exists
-                if (drawHistoryIndex >= 0) {
-                    const img = new Image();
-                    img.onload = () => drawCtx.drawImage(img, 0, 0);
-                    img.src = drawHistory[drawHistoryIndex];
+                // Only resize if dimensions changed to avoid clearing content unnecessarily
+                if (canvas.width !== rect.width || canvas.height !== rect.height) {
+                    // Save content if possible? Complex with resize. 
+                    // Strategy: we accept that drastic resize clears or we'd need to redraw from history.
+                    // For this implementation, we redraw history if available.
+                    
+                    canvas.width = rect.width;
+                    canvas.height = rect.height;
+                    
+                    const id = canvas.dataset.sectionId;
+                    const hist = canvasHistories[id];
+                    if (hist && hist.index >= 0) {
+                        const img = new Image();
+                        img.onload = () => canvas.getContext('2d').drawImage(img, 0, 0);
+                        img.src = hist.history[hist.index];
+                    }
                 }
-            }
+            });
+        }
+
+        function setupCanvasEvents(canvas) {
+            const ctx = canvas.getContext('2d');
+            
+            // Mouse/Touch Handlers tailored for "this" canvas
+            const start = (e) => startDrawingOnCanvas(e, canvas, ctx);
+            const move = (e) => drawOnCanvas(e, canvas, ctx);
+            const end = (e) => stopDrawingOnCanvas(e, canvas, ctx);
+
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', move);
+            canvas.addEventListener('mouseup', end);
+            canvas.addEventListener('mouseout', end);
+            
+            // Passive false to allow preventing default scroll
+            canvas.addEventListener('touchstart', start, { passive: false });
+            canvas.addEventListener('touchmove', move, { passive: false });
+            canvas.addEventListener('touchend', end, { passive: false });
         }
 
         window.toggleDrawingMode = function() {
             isDrawMode = !isDrawMode;
             const fab = document.getElementById('btn-toggle-drawing');
             const toolbar = document.getElementById('drawing-toolbar');
-            const canvas = document.getElementById('drawing-canvas');
             const icon = document.getElementById('btn-toggle-icon');
 
             if (isDrawMode) {
-                // Lock scrolling
-                document.body.style.overflow = 'hidden';
-                
+                document.body.classList.add('drawing-mode-active');
                 fab.classList.add('active');
                 icon.className = "fas fa-check"; 
                 toolbar.classList.remove('hidden');
-                canvas.classList.add('active');
                 
-                resizeCanvas();
+                // Ensure size is correct upon activation
+                resizeCanvases();
             } else {
-                // Unlock scrolling
-                document.body.style.overflow = '';
-                
+                document.body.classList.remove('drawing-mode-active');
                 fab.classList.remove('active');
                 icon.className = "fas fa-paint-brush";
                 toolbar.classList.add('hidden');
-                canvas.classList.remove('active');
             }
         };
 
-        // Helper for coordinates
-        function getPointerPos(e) {
-            const rect = drawCanvas.getBoundingClientRect();
+        function getPointerPosOnCanvas(e, canvas) {
+            const rect = canvas.getBoundingClientRect();
             let clientX, clientY;
             
             if (e.changedTouches && e.changedTouches.length > 0) {
@@ -1903,71 +1949,73 @@
             };
         }
 
-        function startDrawing(e) {
+        function startDrawingOnCanvas(e, canvas, ctx) {
             if (!isDrawMode) return;
-            // Prevent default to stop scrolling
-            if (e.cancelable) e.preventDefault(); 
+            // Only prevent default if we are actively starting a draw
+            if (e.type === 'touchstart') e.preventDefault();
             
             isDrawing = true;
-            const pos = getPointerPos(e);
+            activeCanvas = canvas;
+            
+            const pos = getPointerPosOnCanvas(e, canvas);
             drawStartX = pos.x; 
             drawStartY = pos.y;  
             
             // Snapshot for shapes
             if (currentDrawTool !== 'pencil' && currentDrawTool !== 'eraser') {
-                drawSnapshot = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
+                drawSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
             }
             
-            drawCtx.beginPath();
-            drawCtx.lineWidth = currentDrawSize;
-            drawCtx.lineCap = 'round';
-            drawCtx.lineJoin = 'round';
-            drawCtx.strokeStyle = currentDrawTool === 'eraser' ? 'rgba(0,0,0,1)' : currentDrawColor; 
+            ctx.beginPath();
+            ctx.lineWidth = currentDrawSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = currentDrawTool === 'eraser' ? 'rgba(0,0,0,1)' : currentDrawColor; 
             
             if (currentDrawTool === 'eraser') {
-                drawCtx.globalCompositeOperation = 'destination-out';
+                ctx.globalCompositeOperation = 'destination-out';
             } else {
-                drawCtx.globalCompositeOperation = 'source-over';
+                ctx.globalCompositeOperation = 'source-over';
             }
 
-            drawCtx.moveTo(drawStartX, drawStartY);
+            ctx.moveTo(drawStartX, drawStartY);
         }
 
-        function draw(e) {
-            if (!isDrawing) return;
-            if (e.cancelable) e.preventDefault();
+        function drawOnCanvas(e, canvas, ctx) {
+            if (!isDrawing || activeCanvas !== canvas) return;
+            if (e.type === 'touchmove') e.preventDefault();
 
-            const pos = getPointerPos(e);
+            const pos = getPointerPosOnCanvas(e, canvas);
             const x = pos.x;
             const y = pos.y;
 
             if (currentDrawTool === 'pencil' || currentDrawTool === 'eraser') {
-                drawCtx.lineTo(x, y);
-                drawCtx.stroke();
+                ctx.lineTo(x, y);
+                ctx.stroke();
             } else {
-                // Shapes logic
-                drawCtx.putImageData(drawSnapshot, 0, 0);
-                drawCtx.beginPath();
-                drawCtx.moveTo(drawStartX, drawStartY);
+                // Restore snapshot for shapes
+                ctx.putImageData(drawSnapshot, 0, 0);
+                ctx.beginPath();
+                ctx.moveTo(drawStartX, drawStartY);
                 
                 if (currentDrawTool === 'line') {
-                    drawCtx.lineTo(x, y);
-                    drawCtx.stroke();
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
                 } else if (currentDrawTool === 'rect') {
-                    drawCtx.rect(drawStartX, drawStartY, x - drawStartX, y - drawStartY);
-                    drawCtx.stroke();
+                    ctx.rect(drawStartX, drawStartY, x - drawStartX, y - drawStartY);
+                    ctx.stroke();
                 } else if (currentDrawTool === 'circle') {
                     const radius = Math.sqrt(Math.pow(x - drawStartX, 2) + Math.pow(y - drawStartY, 2));
-                    drawCtx.arc(drawStartX, drawStartY, radius, 0, 2 * Math.PI);
-                    drawCtx.stroke();
+                    ctx.arc(drawStartX, drawStartY, radius, 0, 2 * Math.PI);
+                    ctx.stroke();
                 } else if (currentDrawTool === 'arrow') {
-                    drawArrow(drawCtx, drawStartX, drawStartY, x, y);
+                    drawArrow(ctx, drawStartX, drawStartY, x, y);
                 }
             }
         }
 
         function drawArrow(ctx, fromx, fromy, tox, toy) {
-            const headlen = currentDrawSize * 3; // length of head in pixels
+            const headlen = currentDrawSize * 3;
             const dx = tox - fromx;
             const dy = toy - fromy;
             const angle = Math.atan2(dy, dx);
@@ -1975,7 +2023,6 @@
             ctx.lineTo(tox, toy);
             ctx.stroke();
             
-            // Draw head
             ctx.beginPath();
             ctx.moveTo(tox, toy);
             ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
@@ -1984,67 +2031,98 @@
             ctx.stroke();
         }
 
-        function stopDrawing(e) {
-            if (!isDrawing) return;
-            if (e.type !== 'mouseout') {
-                 if (e.cancelable) e.preventDefault();
-            }
+        function stopDrawingOnCanvas(e, canvas, ctx) {
+            if (!isDrawing || activeCanvas !== canvas) return;
+            if (e.type === 'touchend') e.preventDefault();
+            
             isDrawing = false;
-            drawCtx.closePath();
-            saveDrawState();
+            activeCanvas = null;
+            ctx.closePath();
+            saveCanvasState(canvas);
         }
 
-        function saveDrawState() {
-            drawHistoryIndex++;
-            if (drawHistoryIndex < drawHistory.length) {
-                drawHistory.length = drawHistoryIndex; // Remove future history if we drew something new
+        function saveCanvasState(canvas) {
+            const id = canvas.dataset.sectionId;
+            const h = canvasHistories[id];
+            
+            h.index++;
+            if (h.index < h.history.length) {
+                h.history.length = h.index;
             }
-            drawHistory.push(drawCanvas.toDataURL());
+            h.history.push(canvas.toDataURL());
+            
+            // Also store a global "last modified canvas" for a simple global undo button (optional, usually per-canvas undo is hard with one button)
+            // For now, the UI has one global undo. We will make global undo affect the *last touched* canvas.
+            window.lastModifiedCanvasId = id; 
         }
 
+        // Global Toolbar Functions
         window.drawClear = function() {
-            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-            saveDrawState();
+            // Clears ALL canvases
+            document.querySelectorAll('.section-drawing-canvas').forEach(canvas => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                saveCanvasState(canvas);
+            });
         };
 
         window.drawUndo = function() {
-            if (drawHistoryIndex > 0) {
-                drawHistoryIndex--;
-                const img = new Image();
-                img.onload = () => {
-                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-                    drawCtx.drawImage(img, 0, 0);
-                };
-                img.src = drawHistory[drawHistoryIndex];
+            // Try to undo the last modified canvas, or find one with history
+            const id = window.lastModifiedCanvasId;
+            if (id && canvasHistories[id]) {
+                undoCanvas(id);
             } else {
-                drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-                drawHistoryIndex = -1;
+                // Fallback: iterate and undo the first one found with history? Or just do nothing.
+                // Simple approach: Alert user or just try active one.
+                // Better approach: Just try to undo the last interacted one.
             }
         };
-
-        window.drawRedo = function() {
-            if (drawHistoryIndex < drawHistory.length - 1) {
-                drawHistoryIndex++;
+        
+        function undoCanvas(id) {
+            const h = canvasHistories[id];
+            const canvas = document.querySelector(`.section-drawing-canvas[data-section-id="${id}"]`);
+            const ctx = canvas.getContext('2d');
+            
+            if (h.index > 0) {
+                h.index--;
                 const img = new Image();
                 img.onload = () => {
-                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-                    drawCtx.drawImage(img, 0, 0);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
                 };
-                img.src = drawHistory[drawHistoryIndex];
+                img.src = h.history[h.index];
+            } else {
+                // Clear initial state
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                h.index = -1;
+            }
+        }
+
+        window.drawRedo = function() {
+            const id = window.lastModifiedCanvasId;
+            if (id && canvasHistories[id]) {
+                const h = canvasHistories[id];
+                if (h.index < h.history.length - 1) {
+                    h.index++;
+                    const canvas = document.querySelector(`.section-drawing-canvas[data-section-id="${id}"]`);
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    img.onload = () => {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                    };
+                    img.src = h.history[h.index];
+                }
             }
         };
 
         window.setDrawTool = function(tool) {
             currentDrawTool = tool;
             document.querySelectorAll('.dt-btn').forEach(b => b.classList.remove('active'));
+            // Visual update logic remains same
+            const map = { 'pencil':0, 'line':1, 'arrow':2, 'rect':3, 'circle':4, 'eraser':5 };
             const buttons = document.querySelectorAll('.dt-btn');
-            // Mapping based on index
-            if(tool === 'pencil') buttons[0].classList.add('active');
-            if(tool === 'line') buttons[1].classList.add('active');
-            if(tool === 'arrow') buttons[2].classList.add('active');
-            if(tool === 'rect') buttons[3].classList.add('active');
-            if(tool === 'circle') buttons[4].classList.add('active');
-            if(tool === 'eraser') buttons[5].classList.add('active');
+            if(buttons[map[tool]]) buttons[map[tool]].classList.add('active');
         };
 
         window.setDrawColor = function(color, el) {
@@ -3032,13 +3110,43 @@
             });
             clone.querySelectorAll('[id^="dynamic-sash-type-"]').forEach(el => el.removeAttribute('id'));
 
-            // Capture Drawing
-            let drawingOverlayHtml = '';
-            const canvasEl = document.getElementById('drawing-canvas');
-            if (canvasEl) {
-                const canvasDataUrl = canvasEl.toDataURL();
-                drawingOverlayHtml = `<img src="${canvasDataUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none;">`;
-            }
+            // --- Capture Section Drawings ---
+            // Iterate over all canvases in the original DOM
+            const canvases = document.querySelectorAll('.section-drawing-canvas');
+            canvases.forEach((canvas, index) => {
+                // Find corresponding canvas in clone
+                // Since we cloned main-form-container, the structure is identical.
+                // We need to match by hierarchy or index.
+                // However, our canvases might be inside header too, which isn't in main-form-container clone?
+                // Wait, generateExactStaticHTML only clones main-form-container. 
+                // Drawings on header won't be saved if we only use 'clone'.
+                // But the user asked to save drawings.
+                
+                // Let's attach images to the clone.
+                // The clone is a fragment.
+                const cloneCanvases = clone.querySelectorAll('.section-drawing-canvas');
+                // This assumes exact match order.
+                // NOTE: querySelectorAll on clone might return different set if hidden sections were removed.
+                // Better approach: use data-section-id.
+                
+                const id = canvas.dataset.sectionId;
+                const cloneCanvas = clone.querySelector(`.section-drawing-canvas[data-section-id="${id}"]`);
+                
+                if (cloneCanvas) {
+                    const dataUrl = canvas.toDataURL();
+                    // Replace canvas with image
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+                    img.style.position = 'absolute';
+                    img.style.top = '0';
+                    img.style.left = '0';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.zIndex = '50';
+                    img.style.pointerEvents = 'none';
+                    cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
+                }
+            });
 
             let headContent = document.head.innerHTML;
             const desktopViewport = '<meta name="viewport" content="width=1280, user-scalable=yes">';
@@ -3067,7 +3175,8 @@
         #image-viewer-modal { display: none !important; }
         #collage-modal { display: none !important; }
         #drawing-fab-container { display: none !important; } 
-        #drawing-canvas { display: none !important; } 
+        /* Remove canvas styles for saved version as they are replaced by images */
+        .section-drawing-canvas { display: none !important; } 
         
         .instruction-trigger { cursor: default !important; background: none !important; }
         .instruction-trigger::before { content: none !important; }
@@ -3089,8 +3198,15 @@
     </style>
 </head>
 <body class="min-h-screen bg-gray-50">
-    ${drawingOverlayHtml}
-    <header class="bg-white shadow-lg sticky top-0 z-40 border-b-8 border-gray-200 mb-10 w-full">
+    <header class="bg-white shadow-lg sticky top-0 z-40 border-b-8 border-gray-200 mb-10 w-full relative">
+        <!-- Also capture header drawings if any -->
+        ${(() => {
+            const headerCanvas = document.querySelector('header .section-drawing-canvas');
+            if (headerCanvas) {
+                return `<img src="${headerCanvas.toDataURL()}" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:50; pointer-events:none;">`;
+            }
+            return '';
+        })()}
         <div class="w-full px-10 py-6 flex justify-between items-center">
              <h1 class="text-4xl font-black text-gray-900">استمارة الطالب: ${fullName}</h1>
              <span class="text-2xl font-black text-blue-800 bg-blue-100 px-6 py-3 rounded-full">نسخة للعرض فقط</span>
