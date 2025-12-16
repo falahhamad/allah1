@@ -43,7 +43,7 @@
         }
 
         /* حاويات الأقسام التي سيتم الرسم عليها */
-        section, header {
+        section, header, .drawing-zone {
             position: relative !important; /* ضروري لتموضع الكانفس داخله */
         }
 
@@ -613,12 +613,13 @@
 
         /* --- Drawing Tool CSS --- */
         
-        /* Floating Button Container - Centered Horizontal Strip */
+        /* Floating Button Container - Bottom Right */
         #drawing-fab-container {
             position: fixed;
             bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
+            right: 30px; /* Right side */
+            left: auto;  /* Override center */
+            transform: none; /* Override translate */
             z-index: 10000;
             display: flex;
             flex-direction: row; /* Horizontal */
@@ -858,7 +859,7 @@
     </div>
 
     <!-- Header -->
-    <header class="bg-white shadow-lg sticky top-0 z-40 no-print border-b-8 border-gray-200 mb-10 w-full">
+    <header class="drawing-zone relative bg-white shadow-lg sticky top-0 z-40 no-print border-b-8 border-gray-200 mb-10 w-full">
         <div class="w-full px-10 py-6 flex flex-row justify-between items-center gap-8">
             <h1 class="text-4xl font-black text-gray-900">استمارة زي التخرج الذكية</h1>
             
@@ -876,7 +877,7 @@
         <form id="gradForm" onsubmit="return false;">
 
             <!-- Info Section -->
-            <section class="bg-white p-10 rounded-[2.5rem] shadow-lg border-8 border-gray-100 relative overflow-hidden">
+            <section class="drawing-zone relative bg-white p-10 rounded-[2.5rem] shadow-lg border-8 border-gray-100 overflow-hidden">
                 <div class="absolute top-0 right-0 w-4 h-full bg-blue-600"></div>
                 <!-- تعديل هذا القسم لإضافة الصورة -->
                 <div class="flex items-center justify-between mb-10">
@@ -907,7 +908,7 @@
                     <i class="fas fa-ribbon text-purple-600 bg-purple-100 p-5 rounded-3xl"></i> أولاً: الوشاح
                 </h2>
 
-                <div class="subsection-container border-purple-200">
+                <div class="drawing-zone relative subsection-container border-purple-200">
                     <div class="border-b-4 border-purple-100 pb-2 mb-6 flex justify-between items-end">
                         <h3 class="text-3xl font-black text-purple-900 flex items-center gap-4">
                             <span class="bg-purple-200 text-purple-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">1</span>
@@ -940,7 +941,7 @@
                     </p>
                 </div>
 
-                <div id="sashContentWrapper" class="hidden space-y-8">
+                <div id="sashContentWrapper" class="drawing-zone relative hidden space-y-8">
                     <div id="sashEndsContainer" class="subsection-container border-purple-200">
                         <div class="border-b-4 border-purple-100 pb-2 mb-6 flex justify-between items-end">
                             <h3 class="text-3xl font-black text-purple-900 flex items-center gap-4">
@@ -1087,7 +1088,7 @@
                             </h3>
                         </div>
                         
-                        <div id="sashSectionAmericanNotes" class="hidden mb-8 border-b-4 border-purple-100 pb-8">
+                        <div id="sashSectionAmericanNotes" class="drawing-zone relative hidden mb-8 border-b-4 border-purple-100 pb-8">
                              <div class="flex justify-between items-center mb-6">
                                 <h4 class="inner-subtitle text-purple-900 border-purple-600 mb-0">ملاحظات حول الوشاح الامريكي (إجباري)</h4>
                                 <button type="button" onclick="window.openPreloadedInstruction('sash-american-notes-group', 'ملاحظات الوشاح الامريكي')" class="help-btn btn-purple">
@@ -1142,7 +1143,7 @@
                 <h2 class="text-5xl font-black mb-10 text-gray-900 flex items-center gap-6">
                     <i class="fas fa-graduation-cap text-indigo-600 bg-indigo-100 p-5 rounded-3xl"></i> ثانياً: القبعة
                 </h2>
-                <div class="subsection-container border-indigo-200">
+                <div class="drawing-zone relative subsection-container border-indigo-200">
                     <div class="border-b-4 border-indigo-100 pb-2 mb-6 flex justify-between items-end">
                         <h3 class="text-3xl font-black text-indigo-900 flex items-center gap-4">
                             <span class="bg-indigo-200 text-indigo-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">1</span>
@@ -1167,7 +1168,7 @@
                         <span>مطلوب (يرجى اختيار نوع القبعة).</span>
                     </p>
                 </div>
-                <div id="capContentWrapper" class="hidden space-y-8">
+                <div id="capContentWrapper" class="drawing-zone relative hidden space-y-8">
                     <div class="subsection-container border-indigo-200 bg-indigo-50/50">
                         <div class="border-b-4 border-indigo-100 pb-2 mb-6 flex justify-between items-end">
                             <h3 class="text-3xl font-black text-indigo-900 flex items-center gap-4">
@@ -1295,7 +1296,7 @@
                 <h2 class="text-5xl font-black mb-10 text-gray-900 flex items-center gap-6">
                     <i class="fas fa-tshirt text-emerald-600 bg-emerald-100 p-5 rounded-3xl"></i> ثالثاً: الروب
                 </h2>
-                <div class="subsection-container border-emerald-200">
+                <div class="drawing-zone relative subsection-container border-emerald-200">
                     <div class="border-b-4 border-emerald-100 pb-2 mb-6 flex justify-between items-end">
                         <h3 class="text-3xl font-black text-emerald-900 flex items-center gap-4">
                             <span class="bg-emerald-200 text-emerald-800 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">1</span>
@@ -1321,7 +1322,7 @@
                     </p>
 
                     <!-- خيارات الروب الأمريكي -->
-                    <div id="americanGownOptions" class="hidden mt-8 pt-6 border-t-4 border-emerald-100">
+                    <div id="americanGownOptions" class="drawing-zone relative hidden mt-8 pt-6 border-t-4 border-emerald-100">
                         <h4 class="text-2xl font-black text-emerald-800 mb-6 text-center">خيارات الروب الأمريكي (اختَر كسرة واحدة على الأقل)</h4>
                         <div class="flex flex-row flex-wrap justify-center gap-6 px-4" id="americanPleatsOptions">
                             <label class="flex items-center gap-4 cursor-pointer p-5 rounded-2xl transition border-4 border-emerald-200 bg-emerald-50/30 hover:bg-emerald-100 checkbox-label" id="label-pleats-shoulder">
@@ -1346,7 +1347,7 @@
                     </div>
                 </div>
 
-                <div id="gownContentWrapper" class="hidden space-y-8">
+                <div id="gownContentWrapper" class="drawing-zone relative hidden space-y-8">
                     <!-- قسم إضافات الروب -->
                     <div class="subsection-container border-emerald-200">
                         <div class="border-b-4 border-emerald-100 pb-2 mb-6 flex justify-between items-end">
@@ -1835,28 +1836,31 @@
 
         // --- New Multi-Section Drawing Logic ---
         function initSectionCanvases() {
-            // Find major containers: the main white cards (border-8) and the header
-            const containers = document.querySelectorAll('.shadow-lg.border-8, header.shadow-lg');
+            // Updated: Initialize canvas on specific drawing zones instead of just sections
+            const zones = document.querySelectorAll('.drawing-zone');
             
-            containers.forEach((container, index) => {
-                // Ensure container is relative so canvas is absolute to it
-                if (getComputedStyle(container).position === 'static') {
-                    container.style.position = 'relative';
+            zones.forEach((zone, index) => {
+                // Ensure zone is relative so canvas is absolute to it
+                if (getComputedStyle(zone).position === 'static') {
+                    zone.style.position = 'relative';
                 }
 
-                let canvas = container.querySelector('.section-drawing-canvas');
+                let canvas = zone.querySelector('.section-drawing-canvas');
                 if (!canvas) {
                     canvas = document.createElement('canvas');
                     canvas.className = 'section-drawing-canvas';
-                    canvas.dataset.sectionId = `sec-${index}`;
+                    
+                    // Assign a unique ID if not present, to track history
+                    if (!zone.id) zone.id = `zone-auto-${index}`;
+                    canvas.dataset.sectionId = zone.id;
                     
                     // Initialize history for this canvas
-                    canvasHistories[`sec-${index}`] = {
+                    canvasHistories[zone.id] = {
                         history: [],
                         index: -1
                     };
                     
-                    container.appendChild(canvas);
+                    zone.appendChild(canvas);
                     setupCanvasEvents(canvas);
                 }
             });
@@ -1872,10 +1876,6 @@
                 
                 // Only resize if dimensions changed to avoid clearing content unnecessarily
                 if (canvas.width !== rect.width || canvas.height !== rect.height) {
-                    // Save content if possible? Complex with resize. 
-                    // Strategy: we accept that drastic resize clears or we'd need to redraw from history.
-                    // For this implementation, we redraw history if available.
-                    
                     canvas.width = rect.width;
                     canvas.height = rect.height;
                     
@@ -2169,11 +2169,19 @@
         
         // --- Helper to Clear Section Drawing ---
         function clearSectionCanvas(element) {
-            // Find the parent section container (the one with shadow-lg and border-8)
-            const section = element.closest('.shadow-lg.border-8'); 
-            if (!section) return;
+            // Updated: Find the closest drawing zone and clear it
+            const zone = element.closest('.drawing-zone');
+            if (zone && zone.id) {
+                clearZone(zone.id);
+            }
+        }
+
+        // New helper to clear a specific zone by ID
+        function clearZone(zoneId) {
+            const zone = document.getElementById(zoneId);
+            if (!zone) return;
             
-            const canvas = section.querySelector('.section-drawing-canvas');
+            const canvas = zone.querySelector('.section-drawing-canvas');
             if (canvas) {
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2235,7 +2243,7 @@
             const input = document.getElementById(inputId);
             if(!input) return;
             
-            // Clear drawing for this section because selection changed
+            // Clear drawing for this zone because selection changed
             clearSectionCanvas(element);
 
             input.value = value;
@@ -2366,11 +2374,18 @@
             const val = document.getElementById('sashType').value;
             const wrapper = document.getElementById('sashContentWrapper');
             const americanNotes = document.getElementById('sashSectionAmericanNotes');
+            
+            // Clear wrapper canvas when type changes significantly
+            clearZone('sashContentWrapper');
+            
             if (!val || val.includes('لا اريد')) { 
                 wrapper.classList.add('hidden'); 
                 americanNotes.classList.add('hidden');
             } else {
                 wrapper.classList.remove('hidden');
+                // !! IMPORTANT: Resize canvases immediately after unhiding to ensure they have correct dimensions !!
+                resizeCanvases();
+                
                 document.getElementById('sashSectionTwoSides').classList.toggle('hidden', val.includes('جانبي'));
                 document.getElementById('sashSectionOneSide').classList.toggle('hidden', !val.includes('جانبي'));
                 document.getElementById('sashSectionBack').classList.toggle('hidden', !val.includes('ملكي'));
@@ -2392,7 +2407,17 @@
         function handleCapTypeChange() {
             const val = document.getElementById('capType').value;
             const wrapper = document.getElementById('capContentWrapper');
-            val && !val.includes('لا اريد') ? wrapper.classList.remove('hidden') : wrapper.classList.add('hidden');
+            
+            // Clear wrapper canvas on change
+            clearZone('capContentWrapper');
+            
+            if (val && !val.includes('لا اريد')) {
+                wrapper.classList.remove('hidden');
+                // !! IMPORTANT: Resize canvases immediately after unhiding !!
+                resizeCanvases();
+            } else {
+                wrapper.classList.add('hidden');
+            }
             updateProgress();
         }
 
@@ -2418,10 +2443,25 @@
         function handleGownChange() {
             const val = document.getElementById('gownType').value;
             const wrapper = document.getElementById('gownContentWrapper');
-            val && !val.includes('لا اريد') ? wrapper.classList.remove('hidden') : wrapper.classList.add('hidden');
             const americanOptions = document.getElementById('americanGownOptions');
+            
+            // Clear dynamic zones
+            clearZone('gownContentWrapper');
+            clearZone('americanGownOptions');
+
+            if (val && !val.includes('لا اريد')) {
+                wrapper.classList.remove('hidden');
+                // !! IMPORTANT: Resize canvases immediately after unhiding !!
+                resizeCanvases();
+            } else {
+                wrapper.classList.add('hidden');
+            }
+            
             if (americanOptions) {
-                if (val === 'روب امريكي') americanOptions.classList.remove('hidden');
+                if (val === 'روب امريكي') {
+                    americanOptions.classList.remove('hidden');
+                    resizeCanvases(); // Ensure American options canvas is also sized correctly
+                }
                 else americanOptions.classList.add('hidden');
             }
             updateProgress();
