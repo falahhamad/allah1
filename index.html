@@ -1957,12 +1957,10 @@
         };
 
         window.setDrawSize = function(size) {
-            currentDrawSize = size;
+            currentDrawSize = parseInt(size, 10);
         };
 
         window.drawClear = function() {
-            // Clears all canvases in current view or just the last active?
-            // User requested per-section logic. Let's clear active if any, or all if none focused.
             // Safer: Clear all sections to be consistent with a global clear button
             document.querySelectorAll('.section-canvas').forEach(canvas => {
                const ctx = canvas.getContext('2d');
@@ -1975,12 +1973,58 @@
             if (drawHistoryIndex > 0) {
                 drawHistoryIndex--;
                 const state = drawHistory[drawHistoryIndex];
+                
+                // If we found a state, we restore it. But wait, drawHistory stores the state AFTER a stroke.
+                // To undo, we want to go back to the state BEFORE the current index.
+                // Let's refine:
+                // History: [State1 (Stroke A on Canvas 1), State2 (Stroke B on Canvas 2)]
+                // Current Index: 1 (State2 is visible).
+                // Undo -> Index becomes 0. We want to see State1.
+                // BUT, State2 modified Canvas 2. We need to restore Canvas 2 to what it was at State1.
+                // At State1, Canvas 2 was empty (or whatever it was before State2).
+                // This simple linear history doesn't track per-canvas previous states easily.
+                
+                // Robust approach:
+                // 1. Identify which canvas was modified in the step we are undoing (step at drawHistoryIndex + 1).
+                // 2. Find the LAST time this canvas appeared in history before that step.
+                // 3. Restore that state. If never appeared, clear it.
+                
+                const stepToUndo = drawHistory[drawHistoryIndex + 1];
+                if (!stepToUndo) return; // Should not happen if index logic correct
+                
+                const canvasToRevert = stepToUndo.canvas;
+                const ctx = canvasToRevert.getContext('2d');
+                
+                // Search backwards from current index
+                let foundPrevState = null;
+                for(let i = drawHistoryIndex; i >= 0; i--) {
+                    if(drawHistory[i].canvas === canvasToRevert) {
+                        foundPrevState = drawHistory[i];
+                        break;
+                    }
+                }
+                
+                ctx.clearRect(0, 0, canvasToRevert.width, canvasToRevert.height);
+                if(foundPrevState) {
+                    const img = new Image();
+                    img.onload = () => ctx.drawImage(img, 0, 0);
+                    img.src = foundPrevState.data;
+                }
+            } else if (drawHistoryIndex === -1 && drawHistory.length > 0) {
+                 // Undo the very first action
+                 const stepToUndo = drawHistory[0];
+                 const ctx = stepToUndo.canvas.getContext('2d');
+                 ctx.clearRect(0, 0, stepToUndo.canvas.width, stepToUndo.canvas.height);
+            }
+        };
+        
+        window.drawRedo = function() {
+            if (drawHistoryIndex < drawHistory.length - 1) {
+                drawHistoryIndex++;
+                const state = drawHistory[drawHistoryIndex];
                 if(state && state.canvas) {
                     const ctx = state.canvas.getContext('2d');
-                    ctx.clearRect(0, 0, state.canvas.width, state.canvas.height); // Clear current
-                    // NOTE: This simple undo only restores the bitmap. 
-                    // Since resizing clears bitmap, undo might look weird if resized in between.
-                    // For this app complexity, basic restoration is sufficient.
+                    ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
                     const img = new Image();
                     img.onload = () => ctx.drawImage(img, 0, 0);
                     img.src = state.data;
@@ -2832,7 +2876,9 @@
         function failValidation(id, message) {
             const el = document.getElementById(id);
             if (el) {
-                el.querySelector('span').textContent = message;
+                if (message) {
+                    el.querySelector('span').textContent = message;
+                }
                 el.classList.remove('hidden');
                 const target = el.closest('.subsection-container') || el;
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2848,13 +2894,13 @@
             
             const sashType = document.getElementById('sashType').value;
             if (!sashType || sashType.includes('لا اريد')) {
-                if (!sashType) return failValidation('sashType-validation-msg', 'مطلوب.');
+                if (!sashType) return failValidation('sashType-validation-msg');
                 return checkCapValidation();
             }
             const isSashEndsRequired = !sashType.includes('جانبي');
             if (isSashEndsRequired) {
                 const sashEndsType = document.getElementById('sashEndsType').value;
-                if (!sashEndsType) return failValidation('sashEndsType-validation-msg', 'مطلوب.');
+                if (!sashEndsType) return failValidation('sashEndsType-validation-msg');
             }
             const isTwoSides = !sashType.includes('جانبي');
             const isRoyal = sashType.includes('ملكي');
@@ -2863,28 +2909,28 @@
                 const imageRight = imageStore['upload-sash-right'];
                 const textLeft = document.getElementById('sashLeftText').value.trim();
                 const imageLeft = imageStore['upload-sash-left'];
-                if (!textRight && !imageRight) return failValidation('sashRight-validation-msg', 'مطلوب.');
-                if (!textLeft && !imageLeft) return failValidation('sashLeft-validation-msg', 'مطلوب.');
+                if (!textRight && !imageRight) return failValidation('sashRight-validation-msg');
+                if (!textLeft && !imageLeft) return failValidation('sashLeft-validation-msg');
             } else {
                 const textSide = document.getElementById('sashSideText').value.trim();
                 const imageSide = imageStore['upload-sash-side-1'];
-                if (!textSide && !imageSide) return failValidation('sashOneSide-validation-msg', 'مطلوب.');
+                if (!textSide && !imageSide) return failValidation('sashOneSide-validation-msg');
             }
             if (isRoyal) {
                 const textBack = document.getElementById('sashBackText').value.trim();
                 const imageBack1 = imageStore['upload-sash-back-1'];
                 const imageBack2 = imageStore['upload-sash-back-2'];
-                if (!textBack && !imageBack1 && !imageBack2) return failValidation('sashBack-validation-msg', 'مطلوب.');
+                if (!textBack && !imageBack1 && !imageBack2) return failValidation('sashBack-validation-msg');
             }
-            if (!document.getElementById('sashColor').value.trim()) return failValidation('sashColor-validation-msg', 'مطلوب.');
-            if (!document.getElementById('sashTasselColor').value.trim()) return failValidation('sashTasselColor-validation-msg', 'مطلوب.');
-            if (!document.getElementById('sashEmbroideryColor').value.trim()) return failValidation('sashEmbroideryColor-validation-msg', 'مطلوب.');
+            if (!document.getElementById('sashColor').value.trim()) return failValidation('sashColor-validation-msg');
+            if (!document.getElementById('sashTasselColor').value.trim()) return failValidation('sashTasselColor-validation-msg');
+            if (!document.getElementById('sashEmbroideryColor').value.trim()) return failValidation('sashEmbroideryColor-validation-msg');
             
             if (sashType.includes('امريكي')) {
                 const textAmerican = document.getElementById('sashAmericanText').value.trim();
                 const imageAmerican1 = imageStore['upload-sash-american-1'];
                 const imageAmerican2 = imageStore['upload-sash-american-2'];
-                if (!textAmerican && !imageAmerican1 && !imageAmerican2) return failValidation('sashAmericanNotes-validation-msg', 'مطلوب.');
+                if (!textAmerican && !imageAmerican1 && !imageAmerican2) return failValidation('sashAmericanNotes-validation-msg');
             }
             return checkCapValidation();
         }
@@ -2892,28 +2938,28 @@
         function checkCapValidation() {
             const capType = document.getElementById('capType').value;
             if (!capType || capType.includes('لا اريد')) {
-                if (!capType) return failValidation('capType-validation-msg', 'مطلوب.');
+                if (!capType) return failValidation('capType-validation-msg');
                 return checkGownValidation();
             } else {
                 const capEmbroideryLoc = document.getElementById('capEmbroideryLoc').value;
-                if (!capEmbroideryLoc) return failValidation('capEmbroideryLoc-validation-msg', 'مطلوب.');
+                if (!capEmbroideryLoc) return failValidation('capEmbroideryLoc-validation-msg');
                 if (!capEmbroideryLoc.includes('لا اريد تطريز')) {
                     const topText = document.getElementById('capTopText')?.value.trim();
                     const topImage = imageStore['upload-cap-top'];
                     const rimText = document.getElementById('capRimText')?.value.trim();
                     const rimImage = imageStore['upload-cap-rim'];
                     if (capEmbroideryLoc.includes('دبل تطريز')) {
-                        if (!topText && !topImage) return failValidation('capTopContent-validation-msg', 'مطلوب.');
-                        if (!rimText && !rimImage) return failValidation('capRimContent-validation-msg', 'مطلوب.');
+                        if (!topText && !topImage) return failValidation('capTopContent-validation-msg');
+                        if (!rimText && !rimImage) return failValidation('capRimContent-validation-msg');
                     } else if (capEmbroideryLoc === 'فوق القبعة') {
-                        if (!topText && !topImage) return failValidation('capTopContent-validation-msg', 'مطلوب.');
+                        if (!topText && !topImage) return failValidation('capTopContent-validation-msg');
                     } else if (capEmbroideryLoc === 'طوق القبعة') {
-                        if (!rimText && !rimImage) return failValidation('capRimContent-validation-msg', 'مطلوب.');
+                        if (!rimText && !rimImage) return failValidation('capRimContent-validation-msg');
                     }
-                    if (!document.getElementById('capEmbroideryColor').value.trim()) return failValidation('capEmbroideryColor-validation-msg', 'مطلوب.');
+                    if (!document.getElementById('capEmbroideryColor').value.trim()) return failValidation('capEmbroideryColor-validation-msg');
                 }
-                if (!document.getElementById('capColor').value.trim()) return failValidation('capColor-validation-msg', 'مطلوب.');
-                if (!document.getElementById('capTasselColor').value.trim()) return failValidation('capTasselColor-validation-msg', 'مطلوب.');
+                if (!document.getElementById('capColor').value.trim()) return failValidation('capColor-validation-msg');
+                if (!document.getElementById('capTasselColor').value.trim()) return failValidation('capTasselColor-validation-msg');
             }
             return checkGownValidation();
         }
@@ -2921,19 +2967,19 @@
         function checkGownValidation() {
             const gownType = document.getElementById('gownType').value;
             if (!gownType || gownType.includes('لا اريد')) {
-                 if (!gownType) return failValidation('gownType-validation-msg', 'مطلوب.');
+                 if (!gownType) return failValidation('gownType-validation-msg');
             } else {
                 if (gownType === 'روب امريكي') {
                     const pleats = document.querySelectorAll('[name="americanGownPleats[]"]:checked');
-                    if (pleats.length === 0) return failValidation('americanPleats-validation-msg', 'مطلوب.');
+                    if (pleats.length === 0) return failValidation('americanPleats-validation-msg');
                 }
                 const gownEmbroideryCheckbox = document.querySelector('[name="gownAdditions[]"][value="تطريز الردان"]');
                 if (gownEmbroideryCheckbox && gownEmbroideryCheckbox.checked) {
                     const gownEmbroideryText = document.getElementById('gownEmbroideryText').value.trim();
                     const gownEmbroideryImage = imageStore['upload-gown-embroidery'];
-                    if (!gownEmbroideryText && !gownEmbroideryImage) return failValidation('gownEmbroidery-validation-msg', 'مطلوب.');
+                    if (!gownEmbroideryText && !gownEmbroideryImage) return failValidation('gownEmbroidery-validation-msg');
                 }
-                if (!document.getElementById('gownColor').value.trim()) return failValidation('gownColor-validation-msg', 'مطلوب.');
+                if (!document.getElementById('gownColor').value.trim()) return failValidation('gownColor-validation-msg');
             }
             return true;
         }
