@@ -621,7 +621,7 @@
             align-items: center;
             gap: 15px;
             width: max-content;
-            transform: translateZ(0); /* Hardware acceleration hint */
+            transform: translateZ(0); /* Hardware acceleration hint to ensure visibility */
         }
         
         #btn-toggle-drawing {
@@ -658,6 +658,7 @@
             width: max-content;
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: auto;
+            position: relative; /* Context for color palette */
         }
         #drawing-toolbar.hidden { display: none; }
 
@@ -699,17 +700,39 @@
         }
         .dt-color-trigger:hover { transform: scale(1.1); }
         
+        /* Updated Pop-up Sub-toolbar for Colors */
         #dt-color-palette {
             display: none;
+            position: absolute;
+            bottom: 110%; /* Place above the toolbar */
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 4px solid #e2e8f0;
             flex-direction: row;
-            gap: 8px;
-            background: #f8fafc;
-            padding: 8px;
-            border-radius: 40px;
-            border: 2px solid #e2e8f0;
-            animation: slideLeft 0.2s ease-out;
+            gap: 12px;
+            z-index: 100;
+            width: max-content;
         }
-        #dt-color-palette.open { display: flex; }
+        #dt-color-palette.open { 
+            display: flex; 
+            animation: slideUpFade 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        /* Arrow for the pop-up */
+        #dt-color-palette::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -10px;
+            border-width: 10px;
+            border-style: solid;
+            border-color: #e2e8f0 transparent transparent transparent;
+        }
 
         .dt-color {
             width: 60px; height: 60px;
@@ -735,6 +758,7 @@
 
         @keyframes popIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
         @keyframes slideLeft { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideUpFade { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
     </style>
@@ -763,8 +787,9 @@
 
             <div class="dt-divider"></div>
 
-            <!-- Colors (Collapsible) -->
-            <div class="dt-row">
+            <!-- Colors Trigger & Sub-toolbar -->
+            <div class="dt-row relative">
+                <!-- Sub-Toolbar (Pop-up above) -->
                 <div id="dt-color-palette">
                     <div class="dt-color active" style="background: #ef4444;" onclick="window.setDrawColor('#ef4444', this)"></div>
                     <div class="dt-color" style="background: #3b82f6;" onclick="window.setDrawColor('#3b82f6', this)"></div>
@@ -772,6 +797,7 @@
                     <div class="dt-color" style="background: #eab308;" onclick="window.setDrawColor('#eab308', this)"></div>
                     <div class="dt-color" style="background: #000000;" onclick="window.setDrawColor('#000000', this)"></div>
                 </div>
+                <!-- Main Trigger Button -->
                 <div id="dt-color-trigger" class="dt-color-trigger" style="background: #ef4444;" onclick="window.toggleColorPalette()"></div>
             </div>
 
@@ -1920,8 +1946,14 @@
             currentDrawColor = color;
             document.querySelectorAll('.dt-color').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
+            
+            // Update trigger visually
             const trigger = document.getElementById('dt-color-trigger');
             if(trigger) trigger.style.background = color;
+            
+            // Close sub-toolbar automatically after selection
+            const palette = document.getElementById('dt-color-palette');
+            if(palette) palette.classList.remove('open');
         };
 
         window.setDrawSize = function(size) {
